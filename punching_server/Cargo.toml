@@ -1,5 +1,5 @@
 [package]
-name = "udp_hole_punching"
+name = "punching_server"
 version = "0.1.0"
 authors = ["wangmarkqi <wangalexqi@126.com>"]
 edition = "2018"
@@ -8,21 +8,11 @@ license = "MIT"
 homepage = "https://github.com/wangmarkqi/udp_hole_punching.git"
 repository = "https://github.com/wangmarkqi/udp_hole_punching.git"
 documentation = "https://github.com/wangmarkqi/search_json.git"
-
-
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[workspace]
-members = [
-"punching_client",
-"punching_server"
 
-]
 [dependencies]
 async-std = "1.6.2"
-punching_server = { path = "./punching_server",version="0.1.0"}
-punching_client= { path = "./punching_client" ,version="0.1.0"}
-anyhow="1.0.31"
+anyhow = "1.0.31"
 lazy_static = "1.4.0"
 serde_derive = "1.0.90"
 serde_json = "1.0.39"
