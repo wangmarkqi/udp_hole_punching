@@ -2,13 +2,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::net::{SocketAddr, UdpSocket};
 
-/// Use this function if you want to run a standard server
-/// which waits for two clients to send the same identification
-/// packet, then sends the clients' IP address and external
-/// port number to each other. It also has some basic protection
-/// against someone trying to overload the server by sending multiple
-/// packages from the same ip.
-/// If you want something more customisable, take a look at `make_match`,
+
 ///
 /// # Errors
 /// This function returns immediately with any [`std::io::Error`](https://doc.rust-lang.org/std/io/struct.Error.html) that

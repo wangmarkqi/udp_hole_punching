@@ -9,7 +9,7 @@ lazy_static! {
     pub static ref READY: Mutex<Vec<Packet>> = Mutex::new(vec![]);
 }
 
-pub trait CMD {
+pub trait Process {
     // callee report id and address
     // if need to open,return caller adress,else success
     fn callee_registry(&self) -> bool;
@@ -20,7 +20,7 @@ pub trait CMD {
     fn caller_query_conn(&self) -> Packet;
 }
 
-impl CMD for Packet {
+impl Process for Packet {
     fn callee_registry(&self) -> bool {
         let mut  dic=ADDRESS.lock().unwrap();
         let id=&self.callee_uuid;

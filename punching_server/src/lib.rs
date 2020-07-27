@@ -2,7 +2,7 @@ use async_std::net::UdpSocket;
 
 pub mod action;
 
-use crate::action::cmds::*;
+use crate::action::process::*;
 use crate::action::packet::Packet;
 
 #[macro_use]
@@ -19,10 +19,12 @@ pub const CONFIRM: &str = "4";
 pub const SUCCESS: &'static [u8] = "success".as_bytes();
 pub const FAIL: &'static [u8] = "fail".as_bytes();
 
+pub const PAC_SIZE: int= 4096;
 
-pub async fn run(host: &str) -> anyhow::Result<()> {
+
+pub async fn make_match(host: &str) -> anyhow::Result<()> {
     let socket = UdpSocket::bind(host).await?;
-    let mut buf = vec![0u8; 512 * 8];
+    let mut buf = vec![0u8; PAC_SIZE];
     loop {
         let (n, me) = socket.recv_from(&mut buf).await?;
         if n == 0 {
@@ -30,6 +32,8 @@ pub async fn run(host: &str) -> anyhow::Result<()> {
         }
         let data = String::from_utf8_lossy(&buf[0..n]);
         let mut income: Packet = serde_json::from_str(&data)?;
+
+        dbg!(&data);
 
 
         let mut default_packet = Packet::default();

@@ -1,12 +1,7 @@
 use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
-/// A trait implemented for [`std::net::UdpSocket`](https://doc.rust-lang.org/std/net/struct.UdpSocket.html).
-///
-/// When a socket has been "connected" to the other client, the "connection" is directly to the client, not the server.
-/// The server is not used to pass through packages, only to pair the two clients together.
-/// (As you should know, since it's the whole purpose of
-/// [UDP hole punching](https://en.wikipedia.org/wiki/UDP_hole_punching)).
+
 
 pub trait HolePunchConnect {
 	/// Creates a new socket, calls [`hole_punch_connect`](#tymethod.hole_punch_connect) on it

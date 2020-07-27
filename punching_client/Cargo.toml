@@ -12,3 +12,7 @@ documentation = "https://github.com/wangmarkqi/search_json.git"
 
 [dependencies]
 uuid = { version = "0.8", features = ["serde", "v4"] }
+async-std = "1.6.2"
+anyhow = "1.0.31"
+lazy_static = "1.4.0"
+punching_server = { path = "../punching_server",version="0.1.0"}

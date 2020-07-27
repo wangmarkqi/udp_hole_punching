@@ -332,6 +332,10 @@ dependencies = [
 name = "punching_client"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-std",
+ "lazy_static",
+ "punching_server",
  "uuid",
 ]
 
