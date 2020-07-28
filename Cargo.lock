@@ -335,7 +335,11 @@ dependencies = [
  "anyhow",
  "async-std",
  "lazy_static",
+ "once_cell",
  "punching_server",
+ "serde",
+ "serde_derive",
+ "serde_json",
  "uuid",
 ]
 

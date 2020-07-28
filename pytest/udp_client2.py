@@ -13,11 +13,12 @@ def main(host='39.96.40.177', port=4222):
 
     while True:
         data, addr = sock.recvfrom(1024)
-        print('client received: {} {}'.format(addr, data))
+        print('client received first : {} {}'.format(addr, data))
         addr = msg_to_addr(data)
-        sock.sendto(b'0', addr)
+        print ("addr===",addr)
+        sock.sendto(b'1', addr)
         data, addr = sock.recvfrom(1024)
-        print('client received: {} {}'.format(addr, data))
+        print('client received second: {} {}'.format(addr, data))
 
 
 if __name__ == '__main__':

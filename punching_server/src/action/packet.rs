@@ -1,7 +1,15 @@
 use std::net::{SocketAddr};
 use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize,Debug,Clone)]
+pub enum CMD {
+    Save,
+    Open,
+    P2P,
+    None,
+}
 
-#[derive(Serialize, Deserialize, Debug,Clone)]
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Packet {
     #[serde(default = "localhost")]
     pub caller_address: SocketAddr,
@@ -9,18 +17,14 @@ pub struct Packet {
     pub callee_address: SocketAddr,
     #[serde(default = "empty")]
     pub callee_uuid: String,
-    #[serde(default = "empty")]
-    pub cmd: String,
+    #[serde(default = "default_cmd")]
+    pub cmd: CMD,
     #[serde(default = "empty")]
     pub msg: String,
     #[serde(default = "default_true")]
     pub success: bool,
     #[serde(default = "empty")]
     pub err: String,
-    #[serde(default = "default_false")]
-    pub send_peer: bool,
-    #[serde(default = "localhost")]
-    pub peer_address: SocketAddr,
 }
 
 fn localhost() -> SocketAddr {
@@ -28,17 +32,17 @@ fn localhost() -> SocketAddr {
     localhost
 }
 
+fn default_cmd() -> CMD { CMD::None }
+
 fn empty() -> String {
     "".to_string()
 }
 
-fn default_true() -> bool{
+fn default_true() -> bool {
     true
 }
 
-fn default_false() -> bool{
-    false
-}
+fn default_vec() -> Vec<u8> { vec![] }
 
 impl Packet {
     pub fn default() -> Self {
@@ -48,12 +52,10 @@ impl Packet {
             caller_address: localhost,
             callee_address: localhost,
             callee_uuid: empty.clone(),
-            cmd: empty.clone(),
-            msg: empty.clone(),
+            cmd: CMD::None,
+            msg: "".to_string(),
             success: true,
             err: empty,
-            send_peer: false,
-            peer_address: localhost,
         }
     }
     pub fn localhost() -> SocketAddr {
