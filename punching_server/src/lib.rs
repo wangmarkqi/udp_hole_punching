@@ -2,26 +2,35 @@ use async_std::net::UdpSocket;
 
 pub mod action;
 
-pub use crate::action::packet::{Packet, CMD};
+pub use crate::action::packet::{Packet, CMD, PAC_SIZE,HEADER_SIZE,MTU_SIZE};
 
 use crate::action::process::*;
 
 #[macro_use]
+extern crate anyhow;
+#[macro_use]
 extern crate lazy_static;
 
-pub const CALLEE_SLEEP: u64 = 100;
-pub const SUCCESS: &'static [u8] = "success".as_bytes();
-pub const FAIL: &'static [u8] = "fail".as_bytes();
-pub const PAC_SIZE: usize = 4096;
+/// # Examples
+/// A server to make match
+/// ```
+///use async_std::task::block_on;
 
-
+/// fn main() {
+///  let host = "0.0.0.0:9292";
+///     block_on(punching_server::make_match(host)).unwrap();
+/// ```
 pub async fn make_match(host: &str) -> anyhow::Result<()> {
+    dbg!("server=====",host);
     let socket = UdpSocket::bind(host).await?;
-    let mut buf = vec![0u8; PAC_SIZE];
+    let mut buf = vec![0u8; MTU_SIZE];
     loop {
         let (n, me) = socket.recv_from(&mut buf).await?;
         if n == 0 {
             continue;
+        }
+        if n>HEADER_SIZE{
+            return Err(anyhow!("header size beyond limits"));
         }
         let data = String::from_utf8_lossy(&buf[0..n]);
         let mut income: Packet = serde_json::from_str(&data)?;
@@ -44,7 +53,7 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
                 }
                 socket.send_to(res, me).await?;
             }
-            _ =>(),
+            _ => (),
         }
     }
 }

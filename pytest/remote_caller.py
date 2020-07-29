@@ -21,13 +21,15 @@ def main(host='39.96.40.177', port=4222):
     addr=pac["callee_address"].split(":")
     peer = (addr[0], int(addr[1]))
     print (peer)
+    msg =list(range(4))
     tran = dict(
         cmd="P2P",
-        msg="from caller"
+        msg=msg
     )
     sock.sendto(json.dumps(tran).encode(), peer)
-    for i in ["a","b","c"]:
-        tran['msg']=tran['msg']+str(i)
+    for i in range(9):
+        msg.append(i)
+        tran['msg']=msg
         sock.sendto(json.dumps(tran).encode(), peer)
         try:
             data, addr = sock.recvfrom(1024)
