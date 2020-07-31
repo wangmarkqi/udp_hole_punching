@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use async_std::net::{SocketAddr};
 use rand::prelude::*;
-#[derive(Serialize,PartialEq, Eq, Deserialize, Copy,Debug, Clone)]
+
+#[derive(Serialize, PartialEq, Eq, Deserialize, Copy, Debug, Clone)]
 pub enum CMD {
     Save,
     Open,
@@ -11,7 +12,6 @@ pub enum CMD {
 
 
 pub const PAC_SIZE: usize = 1472;
-pub const MTU_SIZE: usize = 548;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Packet {
@@ -33,9 +33,9 @@ pub struct Packet {
     #[serde(default = "rand_i32")]
     pub session: i32,
     #[serde(default = "default0")]
-    pub order:usize,
+    pub order: usize,
     #[serde(default = "default0")]
-    pub max:usize,
+    pub max: usize,
 }
 
 fn localhost() -> SocketAddr {
@@ -43,12 +43,14 @@ fn localhost() -> SocketAddr {
     localhost
 }
 
-fn default0()->usize{0}
-pub fn rand_i32()->i32{
+fn default0() -> usize { 0 }
+
+pub fn rand_i32() -> i32 {
     let mut rng = rand::thread_rng();
-    let res=rng.gen::<i32>();
+    let res = rng.gen::<i32>();
     res
 }
+
 fn default_cmd() -> CMD { CMD::None }
 
 fn empty() -> String {
@@ -79,23 +81,25 @@ impl Packet {
             msg: v,
             success: true,
             err: empty,
-            session:rand_i32(),
-            order:0,
-            max:0,
+            session: rand_i32(),
+            order: 0,
+            max: 0,
         }
     }
     pub fn localhost() -> SocketAddr {
         localhost()
     }
     pub fn pack(&self) -> Vec<u8> {
-        if let Ok(str) = serde_json::to_string(&self) {
-            return str.as_bytes().to_vec();
+        let header = {
+            if let Ok(str) = serde_json::to_string(&self) {
+                str.as_bytes().to_vec()
+            } else {
+                let mut p = Packet::default();
+                p.success = false;
+                p.err = "serde to str err".to_string();
+                let str2 = serde_json::to_string(&p).unwrap();
+                str2.as_bytes().to_vec()
+            }
         }
-        let mut p = Packet::default();
-        p.success = false;
-        p.err = "serde to str err".to_string();
-        let str2 = serde_json::to_string(&p).unwrap();
-        str2.as_bytes().to_vec()
     }
-
 }
