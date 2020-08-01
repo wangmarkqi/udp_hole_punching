@@ -1,11 +1,7 @@
-use async_std::net::{UdpSocket,SocketAddr};
-use punching_server::{Packet, CMD};
-use crate::cli::p2s::P2S;
-use once_cell::sync::OnceCell;
-use crate::cli::p2p::{P2P, Who};
-use super::rec_pac::rec_pac;
+use async_std::net::{UdpSocket};
+use super::define::*;
+use crate::cli::rec_p2p::rec_single_pac;
 
-pub static SOC: OnceCell<UdpSocket> = OnceCell::new();
 
 /// # Examples
 /// A simple peer-to-peer echo callee
@@ -31,36 +27,32 @@ pub async fn listen(host: &str, handler: &dyn Fn(&Vec<u8>) -> Vec<u8>) -> anyhow
 
     let socket = SOC.get().unwrap();
     // 获取注册的uuid
-    let mut registry = Packet::default();
-    registry.callee_report()?;
-    let registry_vec = registry.pack();
+    let registry = Packet::callee_save_default()?;
     loop {
-        socket.send_to(&registry_vec, host).await?;
+        // 给服务器的走原始接口
+        socket.send_to(&registry.pack(), host).await?;
 
-        let res = rec_pac(Who::Callee).await;
+        let res = rec_single_pac(Who::Callee).await;
         if let Err(_) = res {
             continue;
         }
-        let mut income = res.unwrap();
+        let  income = res.unwrap();
 
         match income.cmd {
             CMD::Open => {
-                let caller = &income.caller_address;
-                // 先caller开门，打洞关键
-                let mut pac = Packet::default();
-                pac.cmd = CMD::P2P;
-                pac.send_pac(Who::Callee, *caller).await?;
+                // 先caller开门，打洞关键,address从服务器make match过来的
+                let  pac = Packet::p2p_default(income.address);
+                pac.send_pac(Who::Callee,&vec![]).await?;
             }
             CMD::P2P => {
                 dbg!(&income);
-                let msg = &income.msg;
                 // 把这个做成api
-
-                let back = handler(msg);
-
-                income.msg = back;
-                let addr = income.caller_address;
-                income.send_pac(Who::Callee, addr).await?;
+                if income.body_len as i32 > 0  && income.is_done(Who::Callee) {
+                    // 拿到成功后删除了数据
+                    let msg = income.assembly(Who::Callee)?;
+                    let back = handler(&msg);
+                    income.send_pac(Who::Callee,&back).await?;
+                }
             }
             _ => {
                 dbg!("no cmd match");

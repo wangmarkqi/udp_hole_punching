@@ -1,105 +1,84 @@
 use serde::{Deserialize, Serialize};
 use async_std::net::{SocketAddr};
-use rand::prelude::*;
-
-#[derive(Serialize, PartialEq, Eq, Deserialize, Copy, Debug, Clone)]
-pub enum CMD {
-    Save,
-    Open,
-    P2P,
-    None,
-}
+use bincode::{deserialize, serialize};
+use super::tools::*;
 
 
-pub const PAC_SIZE: usize = 1472;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Packet {
-    #[serde(default = "localhost")]
-    pub caller_address: SocketAddr,
-    #[serde(default = "localhost")]
-    pub callee_address: SocketAddr,
-    #[serde(default = "empty")]
-    pub callee_uuid: String,
-    #[serde(default = "default_cmd")]
+    pub address: SocketAddr,
+    pub callee: String,
     pub cmd: CMD,
-    #[serde(default = "default_true")]
     pub success: bool,
-    #[serde(default = "empty")]
     pub err: String,
 
-    #[serde(default = "default_vec")]
-    pub msg: Vec<u8>,
-    #[serde(default = "rand_i32")]
-    pub session: i32,
-    #[serde(default = "default0")]
-    pub order: usize,
-    #[serde(default = "default0")]
-    pub max: usize,
+    pub session: u16,
+    pub order: u16,
+    pub max: u16,
+    pub body_len: u16,
+
 }
 
-fn localhost() -> SocketAddr {
-    let localhost: SocketAddr = "0.0.0.0:0".parse().unwrap();
-    localhost
-}
-
-fn default0() -> usize { 0 }
-
-pub fn rand_i32() -> i32 {
-    let mut rng = rand::thread_rng();
-    let res = rng.gen::<i32>();
-    res
-}
-
-fn default_cmd() -> CMD { CMD::None }
-
-fn empty() -> String {
-    "".to_string()
-}
-
-fn default_true() -> bool {
-    true
-}
-
-fn default_vec() -> Vec<u8> {
-    let mut v = vec![];
-    v.push(0);
-    v
-}
 
 impl Packet {
     pub fn default() -> Self {
         let localhost: SocketAddr = "0.0.0.0:0".parse().unwrap();
         let empty = "".to_string();
-        let mut v = vec![];
-        v.push(0);
         Packet {
-            caller_address: localhost,
-            callee_address: localhost,
-            callee_uuid: empty.clone(),
+            address: localhost,
+            callee: empty.clone(),
             cmd: CMD::None,
-            msg: v,
             success: true,
             err: empty,
-            session: rand_i32(),
+            session: rand_u16(),
             order: 0,
             max: 0,
+            body_len: 0,
         }
     }
-    pub fn localhost() -> SocketAddr {
-        localhost()
+
+    pub fn callee_save_default() -> anyhow::Result<Self> {
+        let mut def = Packet::default();
+        let uuid = get_uuid()?;
+        def.callee = uuid;
+        def.cmd = CMD::Save;
+        Ok(def)
     }
+
+    pub fn caller_open_default(id: &str) -> Self {
+        let mut def = Packet::default();
+        def.cmd = CMD::Open;
+        def.callee = id.to_string();
+        def
+    }
+    pub fn p2p_default(address: SocketAddr) -> Self {
+        let mut def = Packet::default();
+        def.cmd = CMD::P2P;
+        def.address = address;
+        def
+    }
+
     pub fn pack(&self) -> Vec<u8> {
-        let header = {
-            if let Ok(str) = serde_json::to_string(&self) {
-                str.as_bytes().to_vec()
-            } else {
-                let mut p = Packet::default();
-                p.success = false;
-                p.err = "serde to str err".to_string();
-                let str2 = serde_json::to_string(&p).unwrap();
-                str2.as_bytes().to_vec()
-            }
+        let mut encoded: Vec<u8> = serialize(&self).unwrap();
+        let n = encoded.len() as u16;
+        dbg!(n);
+        // u16::from_be_bytes([0x12, 0x34]);
+        let header_bytes = n.to_be_bytes();
+        dbg!(header_bytes);
+        let mut header_vec = header_bytes.to_vec();
+        header_vec.append(&mut encoded);
+        dbg!(&header_vec.len());
+        header_vec
+    }
+    pub fn unpack(enc: &Vec<u8>) -> anyhow::Result<Self> {
+        let header = [enc[0], enc[1]];
+        let n = u16::from_be_bytes(header) as usize;
+        let mut body = vec![0; n];
+        for i in 0..n {
+            body[i] = enc[i + 2];
         }
+        let dec = deserialize(&body)?;
+        Ok(dec)
     }
 }
+

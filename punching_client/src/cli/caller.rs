@@ -1,45 +1,56 @@
-use punching_server::{Packet, CMD};
 use async_std::net::{UdpSocket, SocketAddr};
-use once_cell::sync::OnceCell;
-use crate::cli::p2s::P2S;
-use crate::cli::p2p::{P2P, Who};
-use super::rec_pac::rec_pac;
-
-pub static CONN: OnceCell<UdpSocket> = OnceCell::new();
+use super::define::*;
+use crate::cli::rec_p2p::rec_single_pac;
 
 pub async fn connect(server: &str, uuid: &str) -> anyhow::Result<SocketAddr> {
     let soc = UdpSocket::bind("0.0.0.0:0").await?;
     CONN.set(soc).unwrap();
 
     let conn = CONN.get().unwrap();
-    let mut ask_open = Packet::default();
-    ask_open.caller_ask_open(uuid)?;
+    // 给服务器的走原始接口
+    let ask_open = Packet::caller_open_default(uuid);
     conn.send_to(&ask_open.pack(), server).await?;
-
-    let ask = rec_pac(Who::Caller).await?;
-    let suc = ask.success;
-    if suc {
-        let callee = ask.caller_address;
-        // send first pac to open gate
-        // let mut pac = Packet::default();
-        // pac.cmd = CMD::P2P;
-        // pac.send_pac(Who::Caller, callee).await?;
-        return Ok(callee);
+// 所有的收都是封装过得
+    let ask = rec_single_pac(Who::Caller).await?;
+    if ask.success && ask.cmd==CMD::Open {
+        // 服务器make match发过来的
+        return Ok(ask.address);
     }
     Err(anyhow!(ask.err))
 }
 
-pub async fn send(msg: &Vec<u8>, addr: SocketAddr) -> anyhow::Result<usize> {
-    let mut pac = Packet::default();
-    pac.cmd = CMD::P2P;
-    pac.msg = msg.to_owned();
-    let n = pac.send_pac(Who::Caller, addr).await?;
-    Ok(n)
+// send rec caller call共用
+pub async fn send(msg: &Vec<u8>, address: SocketAddr) -> anyhow::Result<u16> {
+    let  pac = Packet::p2p_default(address);
+    let session = pac.send_pac(Who::Caller, msg).await?;
+    Ok(session)
 }
 
-pub async fn rec() -> anyhow::Result<Vec<u8>> {
-    let rec = rec_pac(Who::Caller).await?;
-    Ok(rec.msg)
+pub async fn rec() -> anyhow::Result<(u16, Vec<u8>)> {
+    let rec = rec_single_pac(Who::Caller).await?;
+    if rec.body_len == 0 {
+        return Ok((rec.session, vec![]));
+    }
+    if rec.body_len as i32 > 0 && rec.is_done(Who::Caller) {
+        // 拿到成功后删除了数据
+        let msg = rec.assembly(Who::Callee)?;
+        return Ok((rec.session, msg));
+    }
+    Err(anyhow!("the pac receive has not been done"))
+}
+
+// 传入毫秒的单位（千分之一秒）
+pub async fn rec_by_time(elapse: u128) -> anyhow::Result<(u16, Vec<u8>)> {
+    let now = std::time::Instant::now();
+    loop {
+        let res=rec().await;
+        if let Ok(e)=res{
+            return Ok(e);
+        }
+        let differ = now.elapsed().as_millis();
+        if differ > elapse { break; };
+    }
+    Err(anyhow!("the pac receive has not been done"))
 }
 
 pub async fn test() -> anyhow::Result<()> {
@@ -50,11 +61,12 @@ pub async fn test() -> anyhow::Result<()> {
     v.push(1);
     v.push(2);
     for _ in 0..1024 {
-        for u in 0..10{
+        for u in 0..10 {
             v.push(u);
         }
     }
-    send(&v, address).await?;
+    let session = send(&v, address).await?;
+    dbg!(session);
     let res = rec().await?;
     dbg!(res);
     Ok(())
