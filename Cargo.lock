@@ -357,7 +357,7 @@ dependencies = [
 
 [[package]]
 name = "punching_client"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-std",
@@ -371,7 +371,7 @@ dependencies = [
 
 [[package]]
 name = "punching_server"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-std",
@@ -533,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "udp_hole_punching"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-std",

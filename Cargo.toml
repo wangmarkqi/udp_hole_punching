@@ -1,6 +1,6 @@
 [package]
 name = "udp_hole_punching"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["wangmarkqi <wangalexqi@126.com>"]
 edition = "2018"
 description = "A udp punching tool for peer to peer connection."
@@ -20,8 +20,8 @@ members = [
 ]
 [dependencies]
 async-std = "1.6.2"
-punching_server = { path = "./punching_server",version="0.1.0"}
-punching_client= { path = "./punching_client" ,version="0.1.0"}
+punching_server = { path = "./punching_server",version="0.1.1"}
+punching_client= { path = "./punching_client" ,version="0.1.1"}
 anyhow="1.0.31"
 lazy_static = "1.4.0"
 serde_derive = "1.0.90"

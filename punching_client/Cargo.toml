@@ -1,6 +1,6 @@
 [package]
 name = "punching_client"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["wangmarkqi <wangalexqi@126.com>"]
 edition = "2018"
 description = "A udp punching tool for peer to peer connection."
@@ -13,7 +13,7 @@ documentation = "https://github.com/wangmarkqi/search_json.git"
 [dependencies]
 async-std = "1.6.2"
 anyhow = "1.0.31"
-punching_server = { path = "../punching_server",version="0.1.0"}
+punching_server = { path = "../punching_server",version="0.1.1"}
 once_cell = "1.4.0"
 rand="0.7.3"
 async-trait="0.1.36"
