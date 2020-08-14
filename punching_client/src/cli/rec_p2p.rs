@@ -1,7 +1,8 @@
-use async_std::io;
 use super::define::*;
-use std::time::{Duration};
+use async_std::io;
 use async_trait::async_trait;
+use std::time::Duration;
+
 #[async_trait]
 // this trait if for packet with body_len>0
 impl Receiver for Packet {
@@ -10,26 +11,32 @@ impl Receiver for Packet {
             return vec![];
         }
         // find right map
-        let  map = {
+        let map = {
             match me {
                 Who::Callee => REC_CALLEE.lock().unwrap(),
                 Who::Caller => REC_CALLER.lock().unwrap(),
             }
         };
-        let k=(self.session,self.max);
-        let mut v = map.get(&k).unwrap().to_owned();
-        v.sort_by(|a, b| a.0.cmp(&b.0));
-        v
+        let k = (self.session, self.max);
+        let v1 = map.get(&k);
+        if let Some(v2) = v1 {
+            let mut v3 = v2.to_owned();
+            v3.sort_by(|a, b| a.0.cmp(&b.0));
+            return v3;
+        }
+        return vec![];
     }
     fn is_done(&self, me: Who) -> bool {
         if self.body_len == 0 {
             return true;
         }
         let v = self.get_cached(me);
-        self.max as usize == v.len()
+        self.max as usize == v.len() - 1
     }
     fn clear_cached(&self, me: Who) {
-        if self.body_len == 0 { return; };
+        if self.body_len == 0 {
+            return;
+        };
 
         let mut map = {
             match me {
@@ -49,24 +56,23 @@ impl Receiver for Packet {
             return Err(anyhow!("this session has not been done"));
         }
         let data = self.get_cached(me);
-        if data.len()-1 != self.max as usize {
+        if data.len() - 1 != self.max as usize {
             panic!("data len should equall to max");
         }
 
         let mut start = vec![];
         for (i, msg) in data.iter().enumerate() {
-            let (order,  ms) = msg;
+            let (order, ms) = msg;
             if i != *order as usize {
                 panic!("order size error");
             }
-            let mut parts=ms.to_owned();
+            let mut parts = ms.to_owned();
             start.append(&mut parts);
         }
         self.clear_cached(me);
         Ok(start)
     }
 }
-
 
 // 如果收取的包长度小于header，说明msg就在包里面，如果大于，说明msg在body里面，需要把body转移到msg字段
 pub async fn rec_single_pac(me: Who) -> anyhow::Result<Packet> {
@@ -80,26 +86,26 @@ pub async fn rec_single_pac(me: Who) -> anyhow::Result<Packet> {
     let mut buf = vec![0u8; PAC_SIZE];
     let (n, peer) = io::timeout(Duration::from_secs(4), async {
         socket.recv_from(&mut buf).await
-    }).await?;
+    })
+    .await?;
 
     if n == 0 {
         return Err(anyhow!("receive no data from server"));
     }
     if n > PAC_SIZE {
-        return Err(anyhow!("max pack size:{},actual rec{}",PAC_SIZE,n));
+        return Err(anyhow!("max pack size:{},actual rec{}", PAC_SIZE, n));
     }
-// 没有body的就返回，有body的就存起来，然后返回
+    // 没有body的就返回，有body的就存起来，然后返回
     let mut header = Packet::unpack(&buf[0..n].to_vec())?;
     // 只有p2p改地址，服务器的不改
-    match header.cmd{
-        CMD::P2P=> header.address = peer,
-        _=>(),
+    match header.cmd {
+        CMD::P2P => header.address = peer,
+        _ => (),
     }
     if header.body_len == 0 {
         // 出去的可能是p2p，open等
         return Ok(header);
     };
-
 
     // find right map
     let mut map = {

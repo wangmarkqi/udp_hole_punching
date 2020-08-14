@@ -45,12 +45,13 @@ pub async fn listen(host: &str, handler: &dyn Fn(&Vec<u8>) -> Vec<u8>) -> anyhow
                 pac.send_pac(Who::Callee,&vec![]).await?;
             }
             CMD::P2P => {
-                dbg!(&income);
+                dbg!("callee rec p2p");
                 // 把这个做成api
                 if income.body_len as i32 > 0  && income.is_done(Who::Callee) {
                     // 拿到成功后删除了数据
                     let msg = income.assembly(Who::Callee)?;
                     let back = handler(&msg);
+                    dbg!(&income);
                     income.send_pac(Who::Callee,&back).await?;
                 }
             }

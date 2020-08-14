@@ -26,24 +26,24 @@ pub async fn send(msg: &Vec<u8>, address: SocketAddr) -> anyhow::Result<u16> {
     Ok(session)
 }
 
-pub async fn rec() -> anyhow::Result<(u16, Vec<u8>)> {
+async fn _rec(session:u16) -> anyhow::Result<(u16, Vec<u8>)> {
     let rec = rec_single_pac(Who::Caller).await?;
-    if rec.body_len == 0 {
+    if rec.body_len == 0 && rec.session==session{
         return Ok((rec.session, vec![]));
     }
-    if rec.body_len as i32 > 0 && rec.is_done(Who::Caller) {
+    if rec.session==session && rec.is_done(Who::Caller) {
         // 拿到成功后删除了数据
-        let msg = rec.assembly(Who::Callee)?;
+        let msg = rec.assembly(Who::Caller)?;
         return Ok((rec.session, msg));
     }
     Err(anyhow!("the pac receive has not been done"))
 }
 
 // 传入毫秒的单位（千分之一秒）
-pub async fn rec_by_time(elapse: u128) -> anyhow::Result<(u16, Vec<u8>)> {
+pub async fn rec(session:u16,elapse: u128) -> anyhow::Result<(u16, Vec<u8>)> {
     let now = std::time::Instant::now();
     loop {
-        let res=rec().await;
+        let res=_rec(session).await;
         if let Ok(e)=res{
             return Ok(e);
         }
@@ -57,17 +57,22 @@ pub async fn test() -> anyhow::Result<()> {
     let uuid = "b997dbac-e919-4e44-a8b5-9f7017381e30";
     let remote = "39.96.40.177:4222";
     let address = connect(remote, uuid).await?;
-    let mut v = vec![];
-    v.push(1);
-    v.push(2);
-    for _ in 0..1024 {
+    dbg!(&address);
+    let mut msg = vec![];
+    msg.push(1);
+    msg.push(2);
+    for _ in 0..1099 {
         for u in 0..10 {
-            v.push(u);
+            msg.push(u);
         }
     }
-    let session = send(&v, address).await?;
+    // let msg="wolxie了几个中卫你看看".as_bytes().to_vec();
+    // dbg!(&msg.len());
+    let session = send(&msg, address).await?;
     dbg!(session);
-    let res = rec().await?;
-    dbg!(res);
+    let res = rec(session,1000).await?;
+    let back=res.1;
+   // let back= std::str::from_utf8(&res.1).unwrap();
+    dbg!(back.len());
     Ok(())
 }

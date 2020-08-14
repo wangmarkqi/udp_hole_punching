@@ -41,12 +41,14 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
             CMD::Save => {
                 income.address = me;
                 income.callee_registry();
-                dbg!("save callee",me);
             }
 
             CMD::Open => {
                 income.address = me;
+                dbg!("caller ask open",me);
                 let (pac2caller,pac2callee) = income.make_pair();
+                dbg!(&pac2caller);
+                dbg!(&pac2callee);
                 if pac2callee.success && pac2caller.success {
                     socket.send_to(&pac2caller.pack(), me).await?;
                     socket.send_to(&pac2callee.pack(), pac2caller.address).await?;

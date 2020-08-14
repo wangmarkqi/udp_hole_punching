@@ -24,7 +24,6 @@ impl Sender for Packet {
         let max = if remainder != 0 { times } else { times - 1 } as u16;
         template.max = max;
 
-
         let mut queue = vec![];
         let mut task_done_len = 0;
         let mut order = 0;
@@ -57,7 +56,7 @@ impl Sender for Packet {
             task_done_len = task_done_len + this_done_len;
             order = order + 1;
         }
-        if order != max {
+        if order != max+1 {
             panic!("one of max or order is wrong")
         }
         queue

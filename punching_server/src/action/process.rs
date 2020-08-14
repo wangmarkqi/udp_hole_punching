@@ -26,6 +26,7 @@ impl Process for Packet {
         let mut pac2fail=Packet::caller_open_default(&self.callee);
 
         let dic = ADDRESS.lock().unwrap();
+        dbg!(&dic);
         if !dic.contains_key(&self.callee) {
             pac2fail.success=false;
             pac2fail.err="can not find peer ip to call".to_string();

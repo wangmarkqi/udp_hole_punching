@@ -61,13 +61,10 @@ impl Packet {
     pub fn pack(&self) -> Vec<u8> {
         let mut encoded: Vec<u8> = serialize(&self).unwrap();
         let n = encoded.len() as u16;
-        dbg!(n);
         // u16::from_be_bytes([0x12, 0x34]);
         let header_bytes = n.to_be_bytes();
-        dbg!(header_bytes);
         let mut header_vec = header_bytes.to_vec();
         header_vec.append(&mut encoded);
-        dbg!(&header_vec.len());
         header_vec
     }
     pub fn unpack(enc: &Vec<u8>) -> anyhow::Result<Self> {
