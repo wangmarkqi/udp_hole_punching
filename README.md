@@ -57,7 +57,7 @@ see punching_client/cli/caller.rs
 
 pub async fn test() -> anyhow::Result<()> {
     let uuid = "b997dbac-e919-4e44-a8b5-9f7017381e30";
-    let remote = "39.96.40.177:4222";
+    let remote = "xx.xx.xx.xx:xxxx";
     let address = connect(remote, uuid).await?;
     dbg!(&address);
     let mut msg = vec![];

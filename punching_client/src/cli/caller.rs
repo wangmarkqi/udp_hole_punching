@@ -55,7 +55,7 @@ pub async fn rec(session:u16,elapse: u128) -> anyhow::Result<(u16, Vec<u8>)> {
 
 pub async fn test() -> anyhow::Result<()> {
     let uuid = "b997dbac-e919-4e44-a8b5-9f7017381e30";
-    let remote = "39.96.40.177:4222";
+    let remote = "192.168.40.177:4222";
     let address = connect(remote, uuid).await?;
     dbg!(&address);
     let mut msg = vec![];
