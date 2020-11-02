@@ -3,7 +3,6 @@ use async_std::net::{SocketAddr};
 use bincode::{deserialize, serialize};
 use super::tools::*;
 
-
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Packet {
     pub address: SocketAddr,
@@ -11,12 +10,10 @@ pub struct Packet {
     pub cmd: CMD,
     pub success: bool,
     pub err: String,
-
     pub session: u16,
     pub order: u16,
     pub max: u16,
     pub body_len: u16,
-
 }
 
 
