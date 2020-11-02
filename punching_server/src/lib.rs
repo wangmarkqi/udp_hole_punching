@@ -1,4 +1,5 @@
 use async_std::net::UdpSocket;
+use async_std::task::block_on;
 
 pub mod action;
 
@@ -35,6 +36,7 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
         }
         // let data = String::from_utf8_lossy(&buf[0..n]);
         let mut income: Packet = Packet::unpack(&buf[0..n].to_vec())?;
+        dbg!(&income);
 
         match &income.cmd {
             // callee sent to registry
@@ -59,4 +61,15 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
             _ => (),
         }
     }
+}
+
+#[cfg(test)]
+pub fn run_server() {
+    let host = "127.0.0.1:4222";
+    block_on(make_match(host)).unwrap();
+    // let remote = "39.96.40.177:4222";
+    // block_on(punching_client::listen(remote ,&echo)).unwrap_or(());
+  // block_on(
+  //     punching_client::cli::caller::test()
+  // ).unwrap()
 }
