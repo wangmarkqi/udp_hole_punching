@@ -1,16 +1,19 @@
 use async_std::task::block_on;
 use punching_server as serv;
-use punching_server::Packet;
+// use punching_server::Packet;
 
 pub fn echo(msg:&Vec<u8>)->Vec<u8>{
     msg.to_vec()
 }
 
 fn main() {
+    // let host= "39.96.40.177:4222";
+    let host= "0.0.0.0:4222";
+    block_on(serv::make_match(host)).unwrap()
     // dbg!("run main");
    // let remote = "39.96.40.177:4222";
    //  block_on(punching_client::listen(remote ,&echo)).unwrap_or(());
-  block_on(
-      punching_client::cli::caller::test()
-  ).unwrap()
+  // block_on(
+  //     punching_client::cli::caller::test()
+  // ).unwrap()
 }

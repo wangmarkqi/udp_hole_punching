@@ -1,17 +1,7 @@
-use async_std::net::UdpSocket;
+pub mod action;
+pub use action::process::make_match;
 use async_std::task::block_on;
 
-pub mod action;
-
-pub use crate::action::packet::{Packet};
-pub use crate::action::tools::{ CMD, PAC_SIZE};
-
-use crate::action::process::*;
-
-#[macro_use]
-extern crate anyhow;
-#[macro_use]
-extern crate lazy_static;
 /// # Examples
 /// A server to make match
 /// ```
@@ -22,48 +12,7 @@ extern crate lazy_static;
 ///     block_on(punching_server::make_match(host)).unwrap();
 /// ```
 
-pub async fn make_match(host: &str) -> anyhow::Result<()> {
-    dbg!("server=====",host);
-    let socket = UdpSocket::bind(host).await?;
-    let mut buf = vec![0u8; PAC_SIZE];
-    loop {
-        let (n, me) = socket.recv_from(&mut buf).await?;
-        if n == 0 {
-            continue;
-        }
-        if n>PAC_SIZE{
-            return Err(anyhow!("pac size beyond limits"));
-        }
-        // let data = String::from_utf8_lossy(&buf[0..n]);
-        let mut income: Packet = Packet::unpack(&buf[0..n].to_vec())?;
-        dbg!(&income);
-
-        match &income.cmd {
-            // callee sent to registry
-            CMD::Save => {
-                income.address = me;
-                income.callee_registry();
-            }
-
-            CMD::Open => {
-                income.address = me;
-                dbg!("caller ask open",me);
-                let (pac2caller,pac2callee) = income.make_pair();
-                dbg!(&pac2caller);
-                dbg!(&pac2callee);
-                if pac2callee.success && pac2caller.success {
-                    socket.send_to(&pac2caller.pack(), me).await?;
-                    socket.send_to(&pac2callee.pack(), pac2caller.address).await?;
-                }else{
-                    socket.send_to(&pac2caller.pack(), me).await?;
-                }
-            }
-            _ => (),
-        }
-    }
-}
-
-#[cfg(test)]
+#[test]
 pub fn run_server() {
     let host = "127.0.0.1:4222";
     block_on(make_match(host)).unwrap();

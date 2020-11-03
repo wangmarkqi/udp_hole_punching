@@ -23,7 +23,3 @@ async-std = "1.6.2"
 punching_server = { path = "./punching_server",version="0.1.1"}
 punching_client= { path = "./punching_client" ,version="0.1.1"}
 anyhow="1.0.31"
-lazy_static = "1.4.0"
-serde_derive = "1.0.90"
-serde_json = "1.0.39"
-serde = { version = "1.0.90", features = ["derive"]}
