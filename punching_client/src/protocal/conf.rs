@@ -4,6 +4,7 @@ use async_std::net::{SocketAddr};
 pub struct Conf {
     pub id: [u8; 2],
     pub size: u16,
+    pub resend:u8,
     pub swap_server: String,
 }
 
@@ -16,7 +17,9 @@ impl Conf {
         Conf {
             id: rnd_id,
             size: 1024 as u16,
+            resend:4,
             swap_server:String::from("127.0.0.1:4222"),
         }
     }
+
 }
