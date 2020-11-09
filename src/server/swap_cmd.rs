@@ -4,10 +4,12 @@ pub enum SwapCmd {
     Save = 1,
     Ask = 2,
     Open = 3,
-    Req = 4,
-    ServerErr = 5,
+    ServerErr = 4,
+    Req = 5,
     Got = 6,
     PeerErr = 7,
+    Resp=8,
+    Resend=9,
 }
 
 fn gen_cmd(id: &str, cmd: SwapCmd) -> Vec<u8> {
@@ -26,10 +28,12 @@ impl SwapCmd {
             1 => SwapCmd::Save,
             2 => SwapCmd::Ask,
             3 => SwapCmd::Open,
-            4 => SwapCmd::Req,
-            5 => SwapCmd::ServerErr,
+            4 => SwapCmd::ServerErr,
+            5 => SwapCmd::Req,
             6 => SwapCmd::Got,
             7 => SwapCmd::PeerErr,
+            8 => SwapCmd::Resp,
+            9 => SwapCmd::Resend,
             _ => SwapCmd::None,
         }
     }

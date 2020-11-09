@@ -1,4 +1,4 @@
-use punching_server::SwapCmd;
+use crate::server::swap_cmd::SwapCmd;
 use std::mem::size_of;
 use super::tools::segment_bytes;
 use super::packets::Packets;
@@ -12,7 +12,7 @@ pub struct Packet {
     pub body: Vec<u8>,
 }
 
-// protocal cmd session over oder body
+// cli cmd session over oder body
 impl Packet {
     pub fn empty() -> Self {
         Packet {
@@ -40,7 +40,7 @@ impl Packet {
         }
         v
     }
-    pub fn new_pacs_from_send_bytes(&self, conf_size: usize, body: &Vec<u8>) -> Packets {
+    pub fn new_pacs_from_send_bytes(&self, conf_size: usize, body: &Vec<u8>) -> Vec<Packet> {
         let data = segment_bytes(body, conf_size, self.header_len());
         let mut res = vec![];
         let total = &data.len();
@@ -55,13 +55,10 @@ impl Packet {
             };
             res.push(p);
         }
-        Packets {
-            session:self.session,
-            pacs: res,
-        }
+        res
     }
     pub fn new_from_rec_bytes(total: usize, buf: &Vec<u8>) -> Self {
-        let ord_b :[u8;4]= [buf[3],buf[4],buf[5],buf[6]];
+        let ord_b: [u8; 4] = [buf[3], buf[4], buf[5], buf[6]];
         let ord_u = u32::from_be_bytes(ord_b);
         Packet {
             cmd: buf[0],
@@ -71,7 +68,6 @@ impl Packet {
             body: buf[7..total - 1].to_vec(),
         }
     }
-    pub pac_feed
 }
 
 #[test]

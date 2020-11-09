@@ -1,5 +1,5 @@
 use async_std::net::{SocketAddr};
-use crate::action::swap_cmd::SwapCmd;
+use super::swap_cmd::SwapCmd;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Swap {
@@ -27,7 +27,7 @@ impl Swap {
     }
 
     pub fn pack_err(err:&str) -> Vec<u8> {
-        let err_code=SwapCmd::Err;
+        let err_code=SwapCmd::ServerErr;
         let err_u=err_code.enum2int();
         let mut v = vec![];
         v.push(err_u);

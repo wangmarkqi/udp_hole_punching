@@ -1,7 +1,7 @@
-pub mod action;
-pub use action::process::make_match;
-pub use action::swap_cmd::SwapCmd;
-use async_std::task::block_on;
+pub mod server;
+pub use server::process::make_match;
+pub use server::swap_cmd::SwapCmd;
+pub mod client;
 
 /// # Examples
 /// A server to make match
@@ -20,6 +20,6 @@ pub fn run_server() {
     // let remote = "39.96.40.177:4222";
     // block_on(punching_client::listen(remote ,&echo)).unwrap_or(());
   // block_on(
-  //     punching_client::protocal::caller::test()
+  //     punching_client::cli::caller::test()
   // ).unwrap()
 }

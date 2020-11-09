@@ -1,25 +1,32 @@
 use super::packet::Packet;
 
-#[derive(PartialEq, Debug, Clone)]
-pub type Packets=Vec<Packet>;
+pub trait Packets {
+    fn empty() -> Self;
+    fn min(&self) -> u32;
+    fn max(&self) -> u32;
+    fn has_begin(&self) -> bool;
+    fn has_end(&self) -> bool;
+    fn is_continue(&self) -> bool;
+    fn assembly(&self) -> Vec<u8>;
+}
 
-impl Packets {
-    pub fn empty() -> Self {
-            vec![]
+impl Packets for Vec<Packet> {
+    fn empty() -> Vec<Packet> {
+        vec![]
     }
-    pub fn min(&self) -> u32 {
+    fn min(&self) -> u32 {
         if self.len() == 0 {
             return 0;
         }
         self.iter().map(|e| e.order).min().unwrap()
     }
-    pub fn max(&self) -> u32 {
+    fn max(&self) -> u32 {
         if self.len() == 0 {
             return 0;
         }
         self.iter().map(|e| e.order).max().unwrap()
     }
-    pub fn has_begin(&self) -> bool {
+    fn has_begin(&self) -> bool {
         for i in self.iter() {
             if i.order == 0 {
                 return true;
@@ -27,7 +34,7 @@ impl Packets {
         }
         false
     }
-    pub fn has_end(&self) -> bool {
+    fn has_end(&self) -> bool {
         for i in self.iter() {
             if i.over == 1 {
                 return true;
@@ -36,7 +43,7 @@ impl Packets {
         false
     }
 
-    pub fn is_continue(&self) -> bool {
+    fn is_continue(&self) -> bool {
         let mut orders: Vec<u32> = self.iter().map(|e| e.order).collect();
         orders.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let total = orders.len();
@@ -52,7 +59,7 @@ impl Packets {
         }
         true
     }
-    pub fn assembly(&self) -> Vec<u8> {
+    fn assembly(&self) -> Vec<u8> {
         let mut res = vec![];
         if self.len() == 0 {
             return res;
