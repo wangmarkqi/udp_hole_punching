@@ -64,7 +64,7 @@ impl Packets for Vec<Packet> {
         if self.len() == 0 {
             return res;
         };
-        let mut pac = &mut self.clone();
+        let  pac = &mut self.clone();
         pac.sort_by(|a, b| a.order.partial_cmp(&b.order).unwrap());
         for i in pac.iter() {
             for ii in i.body.iter() {

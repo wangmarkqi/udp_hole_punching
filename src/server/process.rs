@@ -42,7 +42,6 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
         match cmd {
             // callee sent to registry
             SwapCmd::Save => {
-
                 store.insert(id.clone(), swap.address);
                 resp_me = swap.pack("success".as_bytes());
             }

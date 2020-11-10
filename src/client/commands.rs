@@ -1,8 +1,8 @@
 use super::packet::Packet;
 use super::packets::Packets;
-use super::store::Store;
 use crate::server::swap_cmd::SwapCmd;
 use super::conf::Conf;
+use super::send_cache::*;
 use std::net::SocketAddr;
 pub trait Command{
     fn req(addr:SocketAddr,body:Vec<u8>) ->Self;
@@ -14,7 +14,7 @@ pub trait Command{
 }
 impl Command for Vec<Packet>{
     fn req(addr:SocketAddr,body:Vec<u8>)->Self{
-        let sess=Store::Send.new_sess(addr);
+        let sess=new_sess(addr);
         let mut pac=Packet::empty();
         pac.session=sess;
         pac.cmd=SwapCmd::Req.enum2int();

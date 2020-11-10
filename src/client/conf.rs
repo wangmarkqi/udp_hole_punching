@@ -6,7 +6,8 @@ use once_cell::sync::Lazy;
 pub struct Conf {
     pub id: String,
     pub size: usize,
-    pub resend: u8,
+    pub rec_elapse: i32,
+    pub resend_elapse: i32,
     pub swap_server: String,
 }
 
@@ -21,7 +22,8 @@ impl Conf {
         let conf=Conf {
             id: _id.to_string(),
             size: 1024 ,
-            resend: 4,
+            rec_elapse:400
+            resend_elapse: 4000,
             swap_server: String::from("127.0.0.1:4222"),
         };
         let mut m = CONF.lock().unwrap();
@@ -33,7 +35,7 @@ impl Conf {
         *m = self.clone();
     }
     pub fn get()->Self {
-        let mut  m = &*CONF.lock().unwrap();
+        let  m = &*CONF.lock().unwrap();
         m.clone()
     }
 }
