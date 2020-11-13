@@ -22,13 +22,13 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
             continue;
         }
         if n > SERVER_SIZE {
-            let resp = Swap::pack_err("beyond isze");
+            let resp = Swap::pack_err("beyond size");
             socket.send_to(&resp, me).await?;
             continue;
         }
         let swap = Swap::new(&buf, me, n);
         dbg!(&swap);
-        let id=swap.id.clone();
+        let id = swap.id.clone();
         if &id == "" {
             let resp = Swap::pack_err("no id");
             socket.send_to(&resp, me).await?;
@@ -47,33 +47,18 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
             }
             SwapCmd::Ask => {
                 if store.contains_key(&id) {
-                    let peer = store[&id].to_string();
-                    dbg!(&peer);
-                    resp_me = swap.pack(&peer.as_bytes().to_vec());
-                } else {
-                    let resp = Swap::pack_err("no registry");
-                    socket.send_to(&resp, me).await?;
-                    continue;
-                };
-            }
-            SwapCmd::Open => {
-                if store.contains_key(&id) {
                     let peer = store[&id];
-                    let my_addr = swap.address.to_string();
-                    let pack_peer = swap.pack(my_addr.as_bytes());
-                    // 给peer，把自己的add发过去
+                    // 给自己，发peer address
+                    let peer_address = peer.to_string();
+                    resp_me = swap.pack(&peer_address.as_bytes().to_vec());
+                    // 给peer，把自己的add发过去,换成open指令
+                    let pack_peer = swap.pack_open();
                     socket.send_to(&pack_peer, peer).await?;
-                    // 给自己，发成功
-                    resp_me = swap.pack("success".as_bytes());
                 } else {
-                    let resp = Swap::pack_err("no registry");
-                    socket.send_to(&resp, me).await?;
-                    continue;
+                    resp_me = swap.pack("no registry".as_bytes());
                 };
             }
-            _ => {
-                resp_me = swap.pack("no match cmd".as_bytes());
-            }
+            _ =>{}
         }
         socket.send_to(&resp_me, swap.address).await?;
     }

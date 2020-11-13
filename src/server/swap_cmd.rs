@@ -1,15 +1,14 @@
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone,Debug,PartialEq, Eq, Hash)]
 pub enum SwapCmd {
     None = 0,
     Save = 1,
     Ask = 2,
     Open = 3,
     ServerErr = 4,
-    Req = 5,
-    Got = 6,
-    PeerErr = 7,
-    Resp=8,
-    Resend=9,
+    P2P = 5,
+    Finish = 6,
+    Hello= 7,
+    Resend=8,
 }
 
 fn gen_cmd(id: &str, cmd: SwapCmd) -> Vec<u8> {
@@ -29,11 +28,10 @@ impl SwapCmd {
             2 => SwapCmd::Ask,
             3 => SwapCmd::Open,
             4 => SwapCmd::ServerErr,
-            5 => SwapCmd::Req,
-            6 => SwapCmd::Got,
-            7 => SwapCmd::PeerErr,
-            8 => SwapCmd::Resp,
-            9 => SwapCmd::Resend,
+            5 => SwapCmd::P2P,
+            6 => SwapCmd::Finish,
+            7 => SwapCmd::Hello,
+            8 => SwapCmd::Resend,
             _ => SwapCmd::None,
         }
     }
@@ -49,9 +47,8 @@ impl SwapCmd {
     pub fn open(id: &str) -> Vec<u8> {
         gen_cmd(id, SwapCmd::Open)
     }
-    pub fn from_server(i:u8) -> bool{
-    let c = SwapCmd::int2enum(i);
-        match c{
+    pub fn from_server(&self) -> bool{
+        match self{
             SwapCmd::Save=>true,
             SwapCmd::Ask=>true,
             SwapCmd::Open=>true,

@@ -1,7 +1,8 @@
-use async_std::net::{UdpSocket, SocketAddr};
+use async_std::net::UdpSocket;
 use std::net::SocketAddr;
 use once_cell::sync::OnceCell;
 use crate::server::swap_cmd::SwapCmd;
+use crate::server::swap_protocal::Swap;
 use std::time::{Duration, Instant};
 use super::conf::Conf;
 use super::packet::Packet;
@@ -9,6 +10,10 @@ use super::send_cache::save_send_cache;
 use super::rec_cache::RecCache;
 use super::packets::Packets;
 use super::api_server::SOC;
+use super::server_cache::ServerCache;
+use super::api_peer::*;
+use crate::client::cmd_packet::Cmd2Pac;
+use crate::client::send_cache::{clear_send_cache, get_send_cache};
 
 /// # Examples
 /// A simple peer-to-peer echo callee
@@ -34,30 +39,55 @@ pub async fn listen(handler: &dyn Fn(&Vec<u8>) -> Vec<u8>) -> anyhow::Result<()>
     loop {
         let mut buf = vec![0u8; conf.size];
         let (n, address) = soc.recv_from(&mut buf).await?;
-        let cmd=buf[0];
-        let cmd=SwapCmd::int2enum(cmd);
+        let cmd = buf[0];
+        let cmd = SwapCmd::int2enum(cmd);
 
 
-        match income.cmd {
-            CMD::Open => {
-                // 先caller开门，打洞关键,address从服务器make match过来的
-                let pac = Packet::p2p_default(income.address);
-                pac.send_pac(Who::Callee, &vec![]).await?;
-            }
-            CMD::P2P => {
-                dbg!("callee rec p2p");
-                // 把这个做成api
-                if income.body_len as i32 > 0 && income.is_done(Who::Callee) {
-                    // 拿到成功后删除了数据
-                    let msg = income.assembly(Who::Callee)?;
-                    let back = handler(&msg);
-                    dbg!(&income);
-                    income.send_pac(Who::Callee, &back).await?;
+        let from_server = cmd.from_server();
+        if from_server {
+            match cmd {
+                // open is server  init do not feed back,only send to peer
+                SwapCmd::Open => {
+                    // open is server init
+                    let swap = Swap::new(&buf, address, n);
+                    let peer_address = swap.id;
+                    // let peer: SocketAddr = peer_address.parse()?;
+                    // 这种歌地方发送给peer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    let pac=SwapCmd::Hello.hello();
+                    soc.send_to(&pac.to_bytes(), peer_address).await?;
+                    continue;
+                }
+                _ => {
+                    // ask, save servererror
+                    cmd.save_cache(&buf.to_vec(), n);
+                    continue;
                 }
             }
-            _ => {
-                dbg!("no cmd match");
+        }
+        // below is from peer
+
+        let pac=Packet::new_from_rec_bytes(n,&buf.to_vec());
+        match cmd {
+            SwapCmd::P2P => {
+                RecCache::add_pac(address,pac);
             }
+            // peer tell me he open the door
+            SwapCmd::Hello => {
+                dbg!(format!("receive hello from {}",address));
+                continue;
+            }
+            // peer tell me he got all and i del send cache
+            SwapCmd::Finish => {
+                let sess=pac.session;
+                clear_send_cache(address,sess);
+            }
+            // peer tell me he  did not  get all and i resend
+            SwapCmd::Resend=>{
+                let send_pac=get_send_cache(address,pac.session,pac.order)?;
+                soc.send_to(&send_pac.to_bytes(), address).await?;
+            }
+            _=>{}
+
         }
     }
 }
@@ -66,8 +96,6 @@ pub async fn listen(handler: &dyn Fn(&Vec<u8>) -> Vec<u8>) -> anyhow::Result<()>
 pub async fn test() -> anyhow::Result<()> {
     let uuid = "b997dbac-e919-4e44-a8b5-9f7017381e30";
     let remote = "39.96.40.177:4222";
-    let address = connect(remote, uuid).await?;
-    dbg!(&address);
     let mut msg = vec![];
     msg.push(1);
     msg.push(2);
@@ -76,13 +104,6 @@ pub async fn test() -> anyhow::Result<()> {
             msg.push(u);
         }
     }
-    // let msg="wolxie了几个中卫你看看".as_bytes().to_vec();
-    dbg!(&msg.len());
-    let session = send(&msg, address).await?;
-    dbg!(session);
-    let res = rec(session, 1000).await?;
-    let back = res.1;
-    // let back= std::str::from_utf8(&res.1).unwrap();
-    dbg!(back.len());
+
     Ok(())
 }

@@ -12,7 +12,7 @@ pub static SCache: Lazy<Mutex<HashMap<(SocketAddr, u8), Vec<Packet>>>> = Lazy::n
 });
 
 
-fn new_sess(addr: SocketAddr) -> u8 {
+pub fn new_sess(addr: SocketAddr) -> u8 {
     let store = SCache.lock().unwrap();
     for i in 0..=255 {
         if !store.contains_key(&(addr, i)) {
@@ -22,20 +22,23 @@ fn new_sess(addr: SocketAddr) -> u8 {
     255
 }
 
-pub fn save_send_cache(data:&Vec<Packet>,addr:SocketAddr)->u8{
-    let sess=new_sess(addr);
+pub fn save_send_cache(data:&Vec<Packet>,addr:SocketAddr,sess:u8){
     let mut store = SCache.lock().unwrap();
     let k = (addr, sess);
     store.insert(k,data.to_owned());
-    sess
 }
-pub fn get_send_cache(addr: SocketAddr, sess: u8) -> Vec<Packet> {
+pub fn get_send_cache(addr: SocketAddr, sess: u8,order:u32) -> anyhow::Result<Packet> {
     let store = SCache.lock().unwrap();
     let k = (addr, sess);
     if store.contains_key(&k) {
-        return store[&k].clone();
+        let pacs=&store[&k];
+        for pac in pacs.iter(){
+            if pac.order==order{
+                return Ok(pac.to_owned());
+            }
+        }
     }
-    vec![]
+    Err(anyhow!("can not get send cache"))
 }
 
 pub fn clear_send_cache(addr: SocketAddr, sess: u8) {

@@ -1,4 +1,3 @@
-use super::tools::segment_bytes;
 use super::packet::Packet;
 use super::packets::Packets;
 #[test]

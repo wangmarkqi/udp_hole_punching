@@ -6,8 +6,10 @@ pub trait Packets {
     fn max(&self) -> u32;
     fn has_begin(&self) -> bool;
     fn has_end(&self) -> bool;
+    fn lack(&self) -> Vec<u32>;
     fn is_continue(&self) -> bool;
     fn assembly(&self) -> Vec<u8>;
+    fn add_no_duplicate(&mut self, pac: Packet)->bool;
 }
 
 impl Packets for Vec<Packet> {
@@ -42,6 +44,20 @@ impl Packets for Vec<Packet> {
         }
         false
     }
+    fn lack(&self) -> Vec<u32> {
+        let mut orders: Vec<u32> = self.iter().map(|e| e.order).collect();
+        let max = self.max();
+        let mut v = vec![];
+        for i in 0..max + 1 {
+            if !orders.contains(&i) {
+                v.push(i);
+            }
+        }
+        if !self.has_end() {
+            v.push(max + 1);
+        }
+        v
+    }
 
     fn is_continue(&self) -> bool {
         let mut orders: Vec<u32> = self.iter().map(|e| e.order).collect();
@@ -64,7 +80,7 @@ impl Packets for Vec<Packet> {
         if self.len() == 0 {
             return res;
         };
-        let  pac = &mut self.clone();
+        let pac = &mut self.clone();
         pac.sort_by(|a, b| a.order.partial_cmp(&b.order).unwrap());
         for i in pac.iter() {
             for ii in i.body.iter() {
@@ -72,6 +88,15 @@ impl Packets for Vec<Packet> {
             }
         }
         res
+    }
+
+    fn add_no_duplicate(&mut self, pac: Packet)->bool {
+        let orders: Vec<u32> = self.iter().map(|e| e.order).collect();
+        if !orders.contains(&pac.order) {
+            self.push(pac);
+            return true;
+        }
+        false
     }
 }
 

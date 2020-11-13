@@ -2,7 +2,8 @@ pub mod server;
 pub use server::process::make_match;
 pub use server::swap_cmd::SwapCmd;
 pub mod client;
-
+#[macro_use]
+extern crate anyhow;
 /// # Examples
 /// A server to make match
 /// ```

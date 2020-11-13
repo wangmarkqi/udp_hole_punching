@@ -1,6 +1,5 @@
 use crate::server::swap_cmd::SwapCmd;
 use std::mem::size_of;
-use super::tools::segment_bytes;
 use super::packets::Packets;
 use super::conf::Conf;
 
@@ -8,7 +7,9 @@ use super::conf::Conf;
 pub struct Packet {
     pub cmd: u8,
     pub session: u8,
+    // 1 is over ,0 is not over
     pub over: u8,
+    // start from 0
     pub order: u32,
     pub body: Vec<u8>,
 }
@@ -42,7 +43,8 @@ impl Packet {
         v
     }
 
-    pub fn new_pacs_from_send_bytes( body: &Vec<u8>,sess:u8,command:SwapCmd) -> Vec<Packet> {
+    pub fn new_pacs_from_send_bytes( body: &Vec<u8>,sess:u8) -> Vec<Packet> {
+        let command=SwapCmd::P2P;
         let conf_size=Conf::get().size;
         let data = segment_bytes(body, conf_size, Packet::header_len());
         let mut res = vec![];
