@@ -8,7 +8,6 @@ pub enum SwapCmd {
     P2P = 5,
     Finish = 6,
     Hello= 7,
-    Resend=8,
 }
 
 fn gen_cmd(id: &str, cmd: SwapCmd) -> Vec<u8> {
@@ -31,7 +30,6 @@ impl SwapCmd {
             5 => SwapCmd::P2P,
             6 => SwapCmd::Finish,
             7 => SwapCmd::Hello,
-            8 => SwapCmd::Resend,
             _ => SwapCmd::None,
         }
     }

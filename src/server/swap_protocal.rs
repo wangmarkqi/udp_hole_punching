@@ -14,7 +14,7 @@ impl Swap {
     pub fn new(buf: &Vec<u8>, me: SocketAddr, total: usize) -> Self {
         // 对于open，id就是address
         let ids = {
-            if let Ok(i) = std::str::from_utf8(&buf[1..total - 1]) {
+            if let Ok(i) = std::str::from_utf8(&buf[1..total ]) {
                 i
             } else {
                 ""

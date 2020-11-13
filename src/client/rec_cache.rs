@@ -4,60 +4,46 @@ use super::packets::Packets;
 use std::net::SocketAddr;
 use super::packet::Packet;
 use std::time::{Duration, Instant};
+
 #[derive(PartialEq, Debug, Clone)]
 pub struct RecCache {
     timer: Instant,
     pacs: Vec<Packet>,
 }
 
-pub static RCache: Lazy<Mutex<HashMap<(SocketAddr, u8), RecCache>>> = Lazy::new(|| {
-    let m: HashMap<(SocketAddr, u8), RecCache> = HashMap::new();
+pub static RCache: Lazy<Mutex<HashMap<SocketAddr, RecCache>>> = Lazy::new(|| {
+    let m: HashMap<SocketAddr, RecCache> = HashMap::new();
     Mutex::new(m)
 });
 
 impl RecCache {
-    pub fn get_pacs(addr: SocketAddr, sess: u8) -> Vec<Packet> {
+    pub fn get_pacs(addr: SocketAddr) -> Vec<Packet> {
         let mut store = RCache.lock().unwrap();
-        let k = (addr, sess);
-        if store.contains_key(&k) {
-            let pacs = store[&k].pacs.clone();
+        if store.contains_key(&addr) {
+            let pacs = store[&addr].pacs.clone();
             return pacs;
         }
         vec![]
     }
-    pub fn add_pac(addr: SocketAddr, pac: Packet) {
+    pub fn add_pac(addr: SocketAddr, pac: &Packet) {
         let mut store = RCache.lock().unwrap();
-        let s = pac.session;
-        let k = (addr, s);
-        if !&store.contains_key(&k) {
+        if !&store.contains_key(&addr) {
             let mut v = vec![];
-            v.push(pac);
+            v.push(pac.to_owned());
             let rc = RecCache {
                 timer: Instant::now(),
                 pacs: v,
             };
-            store.insert(k, rc);
+            store.insert(addr, rc);
             return;
         }
-        let mut rec :RecCache= store[&k].clone();
+        let mut rec: RecCache = store[&addr].clone();
         rec.pacs.add_no_duplicate(pac);
-        store.insert(k, rec);
-    }
-    pub fn time_differ(addr: SocketAddr, sess: u8) -> i32 {
-        let mut store = RCache.lock().unwrap();
-        let k = (addr, sess);
-        if store.contains_key(&k) {
-            let start = store[&k].timer;
-            let duration = start.elapsed();
-            return duration.as_micros() as i32;
-        }
-        0
+        store.insert(addr, rec);
     }
 
-
-    pub fn clear(addr: SocketAddr, sess: u8) {
-        let k = (addr, sess);
+    pub fn clear(addr: SocketAddr) {
         let mut store = RCache.lock().unwrap();
-        store.remove(&k);
+        store.remove(&addr);
     }
 }

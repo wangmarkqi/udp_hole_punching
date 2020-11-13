@@ -4,7 +4,6 @@ use async_std::net::UdpSocket;
 use super::swap_cmd::SwapCmd;
 use super::swap_protocal::Swap;
 
-
 const SERVER_SIZE: usize = 128;
 
 pub async fn make_match(host: &str) -> anyhow::Result<()> {
@@ -43,24 +42,33 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
             // callee sent to registry
             SwapCmd::Save => {
                 store.insert(id.clone(), swap.address);
+                dbg!("send  suuccess to saver");
                 resp_me = swap.pack("success".as_bytes());
             }
             SwapCmd::Ask => {
                 if store.contains_key(&id) {
                     let peer = store[&id];
                     // 给自己，发peer address
+                    // 给peer，把自己的add发过去,换成open指令
+                    dbg!("send address to asker");
                     let peer_address = peer.to_string();
                     resp_me = swap.pack(&peer_address.as_bytes().to_vec());
                     // 给peer，把自己的add发过去,换成open指令
+                    dbg!("send open to peer");
                     let pack_peer = swap.pack_open();
                     socket.send_to(&pack_peer, peer).await?;
                 } else {
+                    dbg!("send err to reqer");
                     resp_me = swap.pack("no registry".as_bytes());
                 };
             }
-            _ =>{}
+            _ => {}
         }
         socket.send_to(&resp_me, swap.address).await?;
     }
 }
 
+pub async fn test_swap_server() {
+    let host = "0.0.0.0:4222";
+    make_match(host).await;
+}
