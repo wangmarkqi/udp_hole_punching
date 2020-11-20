@@ -14,38 +14,28 @@ def main(host='39.96.40.177', port=4222):
     sock = socket.socket(socket.AF_INET, # Internet
                          socket.SOCK_DGRAM) # UDP
     sock.settimeout(5)
-    dic = dict(
-        cmd="Save",
-        callee_uuid=uuid,
-    )
-    s = json.dumps(dic)
+    save=1
+    cmd_save=save.to_bytes(1,"big")
+    id= uuid.encode()
+    s = cmd_save+id
+    sock.sendto(s, (host, port))
+    
 
     while True:
-        sock.sendto(s.encode(), (host, port))
-        try:
-            data, addr = sock.recvfrom(1024)
-            pac = json.loads(data.decode())
-            cmd = pac["cmd"]
-            if cmd == "Open":
-                print(cmd)
-                addr = pac["caller_address"].split(":")
-                peer = (addr[0], int(addr[1]))
-                s2 = json.dumps(dict(
-                    cmd="P2P",
-                    msg="from caller",
-                ))
-                print(peer)
-                sock.sendto(s2.encode(), peer)
-            elif cmd == "Trans":
-                print ("trans====",data)
-                addr = pac["callee_address"].split(":")
-                peer = (addr[0], int(addr[1]))
-                sock.sendto(data, peer)
-            else:
-                print("cmd not match", cmd)
+        data, addr = sock.recvfrom(1024*10)
+        cmd=data[0]
+        res=data[1:].decode()
+        print ("&&&&&",cmd,res)
+        if cmd == 1:
+            pass
+        if cmd==3:
+            l=res.split(":")
+            print ("send hello to peer",l)
+            
+            sock.sendto(b"hello form peer", (l[0],int(l[1])))
+        else:
+            print("cmd not match", len(data.decode()))
 
-        except Exception as e:
-            print("Timeout!!! Try again...",e)
 
 
 

@@ -7,7 +7,7 @@ use super::swap_protocal::Swap;
 const SERVER_SIZE: usize = 128;
 
 pub async fn make_match(host: &str) -> anyhow::Result<()> {
-    dbg!("server=====",host);
+    dbg!("swap server=====",host);
     let socket = UdpSocket::bind(host).await?;
     let mut store: HashMap<String, SocketAddr> = HashMap::new();
 
@@ -48,15 +48,18 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
             SwapCmd::Ask => {
                 if store.contains_key(&id) {
                     let peer = store[&id];
+                    // 给peer，把自己的add发过去,换成open指令
+                    dbg!("send open to peer");
+                    let pack_peer = swap.pack_open();
+                    // 发送两次
+                    socket.send_to(&pack_peer, peer).await?;
+                    socket.send_to(&pack_peer, peer).await?;
                     // 给自己，发peer address
                     // 给peer，把自己的add发过去,换成open指令
                     dbg!("send address to asker");
                     let peer_address = peer.to_string();
                     resp_me = swap.pack(&peer_address.as_bytes().to_vec());
-                    // 给peer，把自己的add发过去,换成open指令
-                    dbg!("send open to peer");
-                    let pack_peer = swap.pack_open();
-                    socket.send_to(&pack_peer, peer).await?;
+
                 } else {
                     dbg!("send err to reqer");
                     resp_me = swap.pack("no registry".as_bytes());
@@ -70,5 +73,9 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
 
 pub async fn test_swap_server() {
     let host = "0.0.0.0:4222";
-    make_match(host).await;
+    let res= make_match(host).await;
+    match res{
+        Ok(())=>dbg!("everything ok"),
+        Err(e)=>dbg!(&e.to_string()),
+    };
 }

@@ -1,18 +1,22 @@
-use async_std::net::{SocketAddr};
-use std::{sync::{Arc, Mutex, MutexGuard}, collections::HashMap};
+use std::sync:: Mutex;
 use once_cell::sync::Lazy;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Conf {
     pub id: String,
     pub size: usize,
+    pub msg_queue_len:usize,
+    pub ask_resend_more:usize,
     // micro secs
-    pub rec_elapse: i32,
-    // micro secs
-    pub send_timeout: i32,
+    pub hello_elapse: i32,
+    pub single_rec_timeout: i32,
+    pub ask_resend_elapse:i32,
+    pub ask_resend_interval:i32,
     pub swap_server: String,
     // 秒
-    pub heart_beat:i32,
+    pub heart_beat_interval:i32,
+    pub send_cache_timeout: i32,
+    pub rec_cache_timeout:i32,
 }
 
 pub static CONF: Lazy<Mutex<Conf>> = Lazy::new(|| {
@@ -25,11 +29,17 @@ impl Conf {
         let _id = "test";
         let conf = Conf {
             id: _id.to_string(),
-            size: 1024,
-            rec_elapse: 800,
-            send_timeout: 4000,
+            size: 1400,
+            ask_resend_more:10,
+            msg_queue_len:400,
+            single_rec_timeout: 400,
+            hello_elapse:1400,
+            ask_resend_elapse:400,
+            ask_resend_interval:200,
             swap_server: String::from("127.0.0.1:4222"),
-            heart_beat:8,
+            heart_beat_interval:40,
+            rec_cache_timeout:4,
+            send_cache_timeout: 4*2,
         };
         conf
     }

@@ -8,35 +8,21 @@ from remote_callee import uuid
 def main(host='39.96.40.177', port=4222):
     sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     sock.settimeout(5)
-    dic=dict(
-        cmd="Open",
-        callee_uuid=uuid,
-    )
-    s=json.dumps(dic)
-
-    sock.sendto(s.encode(), (host, port))
-
+    ask= 2
+    cmd_ask=ask.to_bytes(1, "big")
+    id = "wq".encode()
+    s = cmd_ask + id
+    print (s)
+    sock.sendto(s, (host, port))
     data, addr = sock.recvfrom(1024)
-    pac=json.loads(data)
-    addr=pac["callee_address"].split(":")
+    data=data[1:].decode()
+    print (data)
+    addr=data.split(":")
     peer = (addr[0], int(addr[1]))
-    print (peer)
-    msg =list(range(4))
-    tran = dict(
-        cmd="P2P",
-        msg=msg
-    )
-    sock.sendto(json.dumps(tran).encode(), peer)
-    for i in range(9):
-        msg.append(i)
-        tran['msg']=msg
-        sock.sendto(json.dumps(tran).encode(), peer)
-        try:
-            data, addr = sock.recvfrom(1024)
-            print(11111, data, addr)
-        except:
-            print ("time out")
-
+    for i in range(10):
+        sock.sendto(str(i).encode(), peer)
+        data, addr = sock.recvfrom(1024)
+        print (data)
 
 if __name__ == '__main__':
     main()
