@@ -10,21 +10,6 @@ use crate::client::cache_send::SendCacheTask;
 use std::collections::HashMap;
 use super::utils::*;
 
-/// # Examples
-/// A simple peer-to-peer echo callee
-/// ```
-///use async_std::task::block_on;
-///  fn echo(msg:&Vec<u8>)->Vec<u8>{
-///     msg.to_vec()
-
-/// fn main() {
-///      let host = "0.0.0.0:4222";
-///      block_on(punching_server::make_match(host)).unwrap();
-///
-///     let remote = "xx.xx.xx.xx:xxxxx";
-///     block_on(punching_client::listen(remote ,&echo)).unwrap_or(());
-
-/// ```
 
 
 pub async fn listen() {
