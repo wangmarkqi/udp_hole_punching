@@ -6,7 +6,7 @@ This crate is aimed to be rust p2p communication framework.
  When a socket has been "connected" to the other client, the "connection" is directly to the client, not the server. The server is not used to pass through packages, only to pair the two clients together. As you should know, since it's the whole purpose of [UDP hole punching](https://en.wikipedia.org/wiki/UDP_hole_punching).
  To implement a p2p framework, the crate provide 2 sub function:
  - the server: Use this function if you want to run a standard server which waits for client-callee to send the identification for registry, then client-caller send "Ask" command with client-callee id.  The server will sends the each clients' IP address and external port number to each other. It also has some basic protection against receive overtime etc. If you want something more customisable, take a look at `make_match`,
- - the client(includes the caller and callee): The single udp transfer packet size in this crate is defined by "pub const Conf.size = 1024;". However,the crate will split data beyond size automatically when sending, assembly to integrate automatically when receiving, asking resending when packetes is not complete. 
+ - the client(includes the caller and callee): The single udp transfer packet size in this crate is defined by "pub const Conf.size = 1024;". However,the crate will split data beyond size automatically when sending, assembly to integrate automatically when receiving, ask resending when packets is not complete. 
   ## Quick Start 
   
   - main.rs
