@@ -51,7 +51,7 @@ This crate is aimed to be rust p2p communication framework.
     use std::time::Duration;
     pub async fn test_callee_listen() -> anyhow::Result<()> {
         let mut conf = Conf::default();
-        conf.swap_server = "39.96.40.177:4222".to_string();
+        conf.swap_server = "<swap server ip: port>".to_string();
         conf.id = "wq".to_string();
         conf.set();
         init_udp().await?;
@@ -80,7 +80,7 @@ This crate is aimed to be rust p2p communication framework.
   ```
     pub async fn test_caller_api() -> anyhow::Result<()> {
         let mut conf = Conf::default();
-        conf.swap_server = "39.96.40.177:4222".to_string();
+        conf.swap_server = "<swap server ip: port>".to_string();
         conf.set();
         init_udp().await?;
         std::thread::spawn(|| {
