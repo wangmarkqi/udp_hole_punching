@@ -1,4 +1,3 @@
 /target
-/pytest/up.py
+/pytest/*
 test.rs
-
