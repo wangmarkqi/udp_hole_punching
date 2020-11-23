@@ -4,80 +4,111 @@ This crate is aimed to be rust p2p communication framework.
 ## What is p2p? 
 
  When a socket has been "connected" to the other client, the "connection" is directly to the client, not the server. The server is not used to pass through packages, only to pair the two clients together. As you should know, since it's the whole purpose of [UDP hole punching](https://en.wikipedia.org/wiki/UDP_hole_punching).
- To implement a p2p framework, the crate provide 3 sub function:
- - the server: Use this function if you want to run a standard server which waits for client-callee to send the uuid identification for registry, then client-caller send "Open" command with client-callee uuid.  The server will sends the each clients' IP address and external port number to each other. It also has some basic protection against receive overtime etc. If you want something more customisable, take a look at `make_match`,
- - the client(includes the caller and callee): The single udp transfer packet size in this crate is defined by "pub const PAC_SIZE: usize = 1472;". However,the p2p trait will split data beyond size automatically when sending, assembly to integrate automatically when receiving, withing single thread. See  `P2P trait`for more.
-
+ To implement a p2p framework, the crate provide 2 sub function:
+ - the server: Use this function if you want to run a standard server which waits for client-callee to send the identification for registry, then client-caller send "Ask" command with client-callee id.  The server will sends the each clients' IP address and external port number to each other. It also has some basic protection against receive overtime etc. If you want something more customisable, take a look at `make_match`,
+ - the client(includes the caller and callee): The single udp transfer packet size in this crate is defined by "pub const Conf.size = 1024;". However,the crate will split data beyond size automatically when sending, assembly to integrate automatically when receiving, asking resending when packetes is not complete. 
   ## Quick Start 
-  - Server 
   
-  see main.rs
+  - main.rs
 ```
-// the code should be run in the server with public ip. 
+    use async_std::task::block_on;
+    pub mod server;
+    pub mod client;
+    #[macro_use]
+    extern crate anyhow;
+    use client::test::*;
+    use server::process::test_swap_server;
+    fn main() {
 
-use async_std::task::block_on;
-fn main() {
-     let host = "0.0.0.0:9292";
-     block_on(punching_server::make_match(host)).unwrap();
-}
-```
-  - Client:Callee 
-  
-  see main.rs. 
-```
-// the code should be run in the client you want to waite to be called. the callee will create uuid file if not exist,and send to server for registry purpose. the user can create uuid file manually, uuid should not duplicate among callees. 
+        // block_on(test_callee_listen());
 
-use async_std::task::block_on;
-// all your route and handler here.msg is incoming data and return result.
- fn echo(msg:&Vec<u8>)->Vec<u8>{
-     msg.to_vec()
-}
-
- fn main() {
-     let remote = "xx.xx.xx.xx:xxxxx";
-     block_on(punching_client::listen(remote ,&echo)).unwrap_or(());
-}
-```
-
-  - Client:Caller 
-  
-  see main.rs
-  ```
-
-// the code should be run in the client you want to send commands to callee. the uuid is id for callee. 
-use async_std::task::block_on;
- fn main() {
-  block_on(
-      punching_client::cli::caller::test()
-  ).unwrap()
-}
-  ```
-see punching_client/cli/caller.rs
-   ```
-
-pub async fn test() -> anyhow::Result<()> {
-    let uuid = "b997dbac-e919-4e44-a8b5-9f7017381e30";
-    let remote = "xx.xx.xx.xx:xxxx";
-    let address = connect(remote, uuid).await?;
-    dbg!(&address);
-    let mut msg = vec![];
-    msg.push(1);
-    msg.push(2);
-    for _ in 0..1099 {
-        for u in 0..10 {
-            msg.push(u);
-        }
+        // block_on(test_caller_api());
+        // block_on(test_swap_server());
     }
-    // let msg="this is just a test".as_bytes().to_vec();
-    // dbg!(&msg.len());
-    let session = send(&msg, address).await?;
-    dbg!(session);
-    let res = rec(session,1000).await?;
-    let back=res.1;
-   // let back= std::str::from_utf8(&res.1).unwrap();
-    dbg!(back.len());
-    Ok(())
+
+
+```
+  - test_swap_server 
+  
+```
+    pub async fn test_swap_server() {
+        let host = "0.0.0.0:xxxx";
+        let res= make_match(host).await;
+        match res{
+            Ok(())=>dbg!("everything ok"),
+            Err(e)=>dbg!(&e.to_string()),
+        };
 }
+```
+  - test_callee_listen
+  
+ 
+```
+    use super::conf::Conf;
+    use super::api::*;
+    use async_std::task::block_on;
+    use super::listen::listen;
+    use std::time::Duration;
+    pub async fn test_callee_listen() -> anyhow::Result<()> {
+        let mut conf = Conf::default();
+        conf.swap_server = "39.96.40.177:4222".to_string();
+        conf.id = "wq".to_string();
+        conf.set();
+        init_udp().await?;
+        std::thread::spawn(|| {
+            block_on(listen());
+        });
+
+        loop {
+            let (addr, v) = rec_from();
+            if v.len() > 0 {
+                let s = String::from_utf8_lossy(&v);
+                dbg!("callee rec res");
+                dbg!(s.len());
+                let back = "callee got you".as_bytes().to_vec();
+                send(&back, addr).await?;
+            }
+        };
+        Ok(())
+    }
+
+
+```
+
+  - test_caller_api 
+  
+  ```
+    pub async fn test_caller_api() -> anyhow::Result<()> {
+        let mut conf = Conf::default();
+        conf.swap_server = "39.96.40.177:4222".to_string();
+        conf.set();
+        init_udp().await?;
+        std::thread::spawn(|| {
+            block_on(listen());
+        });
+        let addr = get_peer_address("wq").await?;
+        dbg!(addr);
+        dbg!("begin");
+
+//test resend assembly when pac size beyond conf size
+        let msg={
+            let mut v=vec![];
+            for i in 0..1024*10{
+                v.push(8 as u8);
+            }
+            v
+        };
+
+        loop {
+            send(&msg, addr).await?;
+            let (addr, v) = rec_from();
+            if v.len() > 0 {
+                let s = String::from_utf8_lossy(&v);
+                dbg!("caller  rec res");
+            }
+        }
+        Ok(())
+    }
 
   ```
- 
+

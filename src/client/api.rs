@@ -4,11 +4,10 @@ use crate::server::swap_cmd::SwapCmd;
 use super::cache_rec::Msg;
 use super::conf::Conf;
 use super::packet::Packet;
-use super::listen::SOC;
 use super::cache::Cache;
 use crate::client::cache_send::GenSession;
 use std::time::Duration;
-use super::listen::PeerAddress;
+use super::utils::{SOC,*};
 // ask cmd get feed back peer address, and server will send open to peer
 pub async fn init_udp() -> anyhow::Result<()> {
     let soc = UdpSocket::bind("0.0.0.0:0").await?;
@@ -19,20 +18,23 @@ pub async fn init_udp() -> anyhow::Result<()> {
 pub async fn get_peer_address(peer_id: &str) -> anyhow::Result<SocketAddr> {
     let conf = Conf::get();
 
+    update_peer_address("".to_string());
     let send_data = SwapCmd::ask(peer_id);
+    {
+        let soc = SOC.get().unwrap();
+        soc.send_to(&send_data, &conf.swap_server).await?;
+    }
 
-    let soc = SOC.get().unwrap();
-    soc.send_to(&send_data, &conf.swap_server).await?;
-    async_std::task::sleep(Duration::from_micros(conf.hello_elapse as u64)).await;
+    async_std::task::sleep(Duration::from_secs(conf.ask_address_elapse as u64)).await;
 
-    let mut  peer_cache=PeerAddress.lock().unwrap();
-    let res=&*peer_cache.clone();
-    dbg!(res);
-    *peer_cache="".to_string();
+    let res=read_peer_address();
+    dbg!(&res);
     // let addr_str = String::from_utf8_lossy(&res);
-    let addr: SocketAddr = res.parse()?;
-
-    Ok(addr)
+    if res!="".to_string(){
+        let addr: SocketAddr = res.parse()?;
+        return Ok(addr);
+    }
+    Err(anyhow!("can not get peer address"))
 }
 
 pub async fn send(msg: &Vec<u8>, address: SocketAddr) -> anyhow::Result<()> {

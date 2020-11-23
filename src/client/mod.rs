@@ -7,4 +7,5 @@ pub mod packets;
 pub mod conf;
 pub mod listen;
 pub mod api;
+pub mod utils;
 pub mod test;

@@ -3,7 +3,7 @@ use super::conf::Conf;
 use crate::client::cache::Cache;
 use super::packet::Packet;
 use async_trait::async_trait;
-use super::listen::SOC;
+use super::utils::*;
 
 pub trait GenSession {
     fn gen_session(&self, addr: SocketAddr) -> u8;

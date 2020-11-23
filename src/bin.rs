@@ -9,6 +9,6 @@ fn main() {
 
     // block_on(test_callee_listen());
 
-    block_on(test_caller_api());
+    // block_on(test_caller_api());
     // block_on(test_swap_server());
 }

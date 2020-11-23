@@ -1,19 +1,14 @@
-use async_std::net::UdpSocket;
-use std::net::SocketAddr;
-use once_cell::sync::OnceCell;
 use crate::server::swap_cmd::SwapCmd;
 use crate::server::swap_protocal::Swap;
-
-use once_cell::sync::Lazy;
 use super::conf::Conf;
 use super::packet::Packet;
-use std::sync::Mutex;
 use super::timer::Timer;
 use crate::client::timer::{HeartBeat, AskResend};
 use super::cache::Cache;
 use crate::client::cache_rec::RecCacheTask;
 use crate::client::cache_send::SendCacheTask;
 use std::collections::HashMap;
+use super::utils::*;
 
 /// # Examples
 /// A simple peer-to-peer echo callee
@@ -70,7 +65,6 @@ async fn _listen() -> anyhow::Result<()> {
 
                 SwapCmd::Ask => {
                     dbg!("update peer address");
-                    send_hello(&swap.id).await?;
                     let peer_address = swap.id;
                     update_peer_address(peer_address);
                 }
@@ -79,10 +73,8 @@ async fn _listen() -> anyhow::Result<()> {
             continue;
         }
 
-
         dbg!("below is from peer");
         let pac = Packet::new_from_rec_bytes(n, &buf);
-        dbg!(&pac);
         match cmd {
             SwapCmd::P2P => {
                 Cache::Rec.add_pac(address, &pac);
@@ -94,35 +86,11 @@ async fn _listen() -> anyhow::Result<()> {
         }
     }
 }
-pub static SOC: OnceCell<UdpSocket> = OnceCell::new();
-pub static PeerAddress: Lazy<Mutex<String>> = Lazy::new(|| {
-    Mutex::new("".to_string())
-});
-fn update_peer_address(address:String){
-    let mut store=PeerAddress.lock().unwrap();
-    *store=address;
-}
+
+
 async fn send_hello(peer: &str) -> anyhow::Result<()> {
-    let soc = SOC.get().unwrap();
     let hello = Packet::hello();
+    let soc = SOC.get().unwrap();
     soc.send_to(&hello, peer).await?;
     Ok(())
 }
-
-async fn rec_with_timeout() -> (usize, SocketAddr, Vec<u8>) {
-    let conf = Conf::get();
-    let soc = SOC.get().unwrap();
-    let mut buf = vec![0u8; conf.size];
-
-    let res = async_std::io::timeout(std::time::Duration::from_micros(conf.single_rec_timeout as u64), async {
-        soc.recv_from(&mut buf).await
-    }).await;
-    if let Err(e) = res {
-        let default: SocketAddr = "127.0.0.1:0000".parse().unwrap();
-        return (0, default, buf);
-    }
-    let (n, address) = res.unwrap();
-    (n, address, buf)
-}
-
-

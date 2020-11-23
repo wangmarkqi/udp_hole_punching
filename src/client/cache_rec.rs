@@ -7,8 +7,7 @@ use async_trait::async_trait;
 use std::collections::VecDeque;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use super::listen::SOC;
-
+use super::utils::*;
 pub static Msg: Lazy<Mutex<VecDeque<(SocketAddr, Vec<u8>)>>> = Lazy::new(|| {
     let conf = Conf::get();
     let m: VecDeque<(SocketAddr, Vec<u8>)> = VecDeque::with_capacity(conf.msg_queue_len);
