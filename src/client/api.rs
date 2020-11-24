@@ -24,12 +24,13 @@ pub async fn ask_peer_address(peer_id: &str) -> anyhow::Result<()> {
         let soc = SOC.get().unwrap();
         soc.send_to(&send_data, &conf.swap_server).await?;
     }
-
-
-
-    Err(anyhow!("can not get peer address"))
+    Ok(())
 }
-
+pub fn read_peer_address()->String{
+    let store=PeerAddress.lock().unwrap();
+    let res=store.clone();
+    res
+}
 pub async fn send(msg: &Vec<u8>, address: SocketAddr) -> anyhow::Result<()> {
 
     let cs = Cache::Send;

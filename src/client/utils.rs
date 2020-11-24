@@ -12,12 +12,6 @@ pub fn update_peer_address(address:String){
     let mut store=PeerAddress.lock().unwrap();
     *store=address;
 }
-pub fn read_peer_address()->String{
-    let store=PeerAddress.lock().unwrap();
-    let res=store.clone();
-    res
-}
-
 
 
 pub async fn rec_with_timeout() -> (usize, SocketAddr, Vec<u8>) {

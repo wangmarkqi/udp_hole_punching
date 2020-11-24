@@ -19,12 +19,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "udp_hole_punching"
 path = "src/bin.rs"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-#[workspace]
-#members = [
-#"punching_client",
-#"punching_server"
-#]
+
 [dependencies]
 async-std = "1.6.2"
 anyhow = "1.0.31"
