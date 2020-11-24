@@ -98,7 +98,6 @@ impl Cache {
         let mut store = self.store();
         let orders: Vec<u32> = info.pacs.iter().map(|e| e.order).collect();
         if orders.contains(&pac.order) {
-            dbg!("order duplicate");
             return;
         }
         info.pacs.push(pac.to_owned());
