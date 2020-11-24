@@ -21,9 +21,9 @@ name = "udp_hole_punching"
 path = "src/bin.rs"
 
 [dependencies]
-async-std = "1.6.2"
 anyhow = "1.0.31"
 once_cell = "1.4.0"
 async-trait="0.1.36"
+async-std = "1.6.2"
 #punching_server = { path = "./punching_server",version="0.1.1"}
 #punching_client= { path = "./punching_client" ,version="0.1.1"}

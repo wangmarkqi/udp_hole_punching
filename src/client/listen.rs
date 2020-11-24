@@ -58,7 +58,6 @@ async fn _listen() -> anyhow::Result<()> {
             continue;
         }
 
-        dbg!("below is from peer");
         let pac = Packet::new_from_rec_bytes(n, &buf);
         match cmd {
             SwapCmd::P2P => {
