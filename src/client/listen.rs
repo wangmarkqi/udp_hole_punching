@@ -48,7 +48,6 @@ async fn _listen() -> anyhow::Result<()> {
                 }
 
                 SwapCmd::Ask => {
-                    dbg!("update peer address");
                     let peer_address = swap.id;
                     update_peer_address(peer_address);
                 }

@@ -27,13 +27,18 @@ pub trait HeartBeat {
 impl HeartBeat for Timer {
     async fn heart_beat(&mut self) -> anyhow::Result<()> {
         let conf = Conf::get();
+        let id=conf.id;
+        if id=="".to_string(){
+            return Ok(());
+        }
+
         let soc = SOC.get().unwrap();
         // let mut last_hb = Instant::now();
         // 定时发送hb
         let elapse = self.time.elapsed().as_secs() as i32;
         if elapse > conf.heart_beat_interval {
             dbg!("send hb");
-            let hb = SwapCmd::save(&conf.id);
+            let hb = SwapCmd::save(&id);
             soc.send_to(&hb, &conf.swap_server).await?;
             self.time = Instant::now();
         }
