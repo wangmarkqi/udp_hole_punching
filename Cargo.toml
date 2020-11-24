@@ -1,6 +1,6 @@
 [package]
 name = "udp_hole_punching"
-version = "2.0.2"
+version = "2.0.3"
 authors = ["wangmarkqi <wangalexqi@126.com>"]
 edition = "2018"
 description = "A udp punching tool for peer to peer connection."

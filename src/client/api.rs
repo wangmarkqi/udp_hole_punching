@@ -7,7 +7,8 @@ use super::packet::Packet;
 use super::cache::Cache;
 use crate::client::cache_send::GenSession;
 use std::time::Duration;
-use super::utils::{SOC,*};
+use super::utils::{SOC, *};
+
 // ask cmd get feed back peer address, and server will send open to peer
 pub async fn init_udp() -> anyhow::Result<()> {
     let soc = UdpSocket::bind("0.0.0.0:0").await?;
@@ -26,13 +27,15 @@ pub async fn ask_peer_address(peer_id: &str) -> anyhow::Result<()> {
     }
     Ok(())
 }
-pub fn read_peer_address()->String{
-    let store=PeerAddress.lock().unwrap();
-    let res=store.clone();
-    res
-}
-pub async fn send(msg: &Vec<u8>, address: SocketAddr) -> anyhow::Result<()> {
 
+pub fn read_peer_address() -> anyhow::Result<SocketAddr> {
+    let store = PeerAddress.lock().unwrap();
+    let res = store.clone();
+    let addr: SocketAddr = res.parse()?;
+    Ok(addr)
+}
+
+pub async fn send(msg: &Vec<u8>, address: SocketAddr) -> anyhow::Result<()> {
     let cs = Cache::Send;
     let sess = cs.gen_session(address);
     let pacs = Packet::new_pacs_from_send_bytes(msg, sess);
