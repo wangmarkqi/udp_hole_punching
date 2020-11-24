@@ -13,7 +13,6 @@ pub struct Conf {
     pub ask_resend_interval:i32,
     pub swap_server: String,
     // 秒
-    pub ask_address_elapse: i32,
     pub heart_beat_interval:i32,
     pub send_cache_timeout: i32,
     pub rec_cache_timeout:i32,
@@ -36,7 +35,6 @@ impl Conf {
             ask_resend_elapse:400,
             ask_resend_interval:200,
             swap_server: String::from("127.0.0.1:4222"),
-            ask_address_elapse:9,
             heart_beat_interval:40,
             rec_cache_timeout:4,
             send_cache_timeout: 4*2,

@@ -15,7 +15,7 @@ pub async fn init_udp() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn get_peer_address(peer_id: &str) -> anyhow::Result<SocketAddr> {
+pub async fn ask_peer_address(peer_id: &str) -> anyhow::Result<()> {
     let conf = Conf::get();
 
     update_peer_address("".to_string());
@@ -25,15 +25,8 @@ pub async fn get_peer_address(peer_id: &str) -> anyhow::Result<SocketAddr> {
         soc.send_to(&send_data, &conf.swap_server).await?;
     }
 
-    async_std::task::sleep(Duration::from_secs(conf.ask_address_elapse as u64)).await;
 
-    let res=read_peer_address();
-    dbg!(&res);
-    // let addr_str = String::from_utf8_lossy(&res);
-    if res!="".to_string(){
-        let addr: SocketAddr = res.parse()?;
-        return Ok(addr);
-    }
+
     Err(anyhow!("can not get peer address"))
 }
 

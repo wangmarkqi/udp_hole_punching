@@ -7,5 +7,6 @@ extern crate anyhow;
 /// ```
 pub use server::process::make_match;
 pub use client::conf::Conf;
-pub use client::api::{send,rec_from,init_udp,get_peer_address};
+pub use client::api::{send,rec_from,init_udp,ask_peer_address};
+pub use client::utils::read_peer_address;
 pub use client::listen::listen;
