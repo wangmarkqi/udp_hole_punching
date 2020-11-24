@@ -40,7 +40,6 @@ async fn _listen() -> anyhow::Result<()> {
         let cmd = SwapCmd::int2enum(buf[0]);
 
         if cmd.from_server() {
-            dbg!("from server");
             let swap = Swap::new(&buf, address, n);
             match cmd {
                 SwapCmd::Open => {
