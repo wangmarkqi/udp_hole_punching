@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "udp_hole_punching"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "anyhow",
  "async-std",

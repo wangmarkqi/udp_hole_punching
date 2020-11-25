@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use super::utils::*;
 
 
-
 pub async fn listen() {
     let res = _listen().await;
     match res {
@@ -22,7 +21,6 @@ pub async fn listen() {
 
 async fn _listen() -> anyhow::Result<()> {
     // 远程连接必须0.0.0.0:0
-    dbg!(" begin listen");
     let mut tim_hb = Timer::start();
     let mut tim_resend = Timer::start();
     loop {
