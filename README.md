@@ -54,7 +54,7 @@ pub async fn test_callee_listen() -> anyhow::Result<()> {
     conf.id = "wq".to_string();
     conf.set();
     hole::init_udp().await?;
-    spawn(|| async{
+    spawn( async{
         hole::listen().await;
     });
 
@@ -82,7 +82,7 @@ pub async fn test_callee_listen() -> anyhow::Result<()> {
     conf.swap_server = "39.96.40.177:4222".to_string();
     conf.set();
     hole::init_udp().await?;
-    spawn(|| async{
+    spawn( async{
         hole::listen().await;
     });
     hole::ask_peer_address("wq").await?;
