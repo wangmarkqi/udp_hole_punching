@@ -44,7 +44,7 @@ This crate is aimed to be rust p2p communication framework.
   
  
 ```
- use async_std::task::block_on;
+ use async_std::task::{spawn,block_on};
 use std::time::Duration;
 use udp_hole_punching as hole;
 
@@ -54,8 +54,8 @@ pub async fn test_callee_listen() -> anyhow::Result<()> {
     conf.id = "wq".to_string();
     conf.set();
     hole::init_udp().await?;
-    std::thread::spawn(|| {
-        block_on(hole::listen());
+    spawn(|| async{
+        hole::listen().await;
     });
 
     loop {
@@ -82,8 +82,8 @@ pub async fn test_callee_listen() -> anyhow::Result<()> {
     conf.swap_server = "39.96.40.177:4222".to_string();
     conf.set();
     hole::init_udp().await?;
-    std::thread::spawn(|| {
-        block_on(hole::listen());
+    spawn(|| async{
+        hole::listen().await;
     });
     hole::ask_peer_address("wq").await?;
 // must waite long enough for address to be writeen into cache

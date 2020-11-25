@@ -18,7 +18,6 @@ pub async fn init_udp() -> anyhow::Result<()> {
 
 pub async fn ask_peer_address(peer_id: &str) -> anyhow::Result<()> {
     let conf = Conf::get();
-
     update_peer_address("".to_string());
     let send_data = SwapCmd::ask(peer_id);
     {
