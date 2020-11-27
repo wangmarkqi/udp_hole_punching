@@ -6,7 +6,7 @@ pub enum SwapCmd {
     Open = 3,
     ServerErr = 4,
     P2P = 5,
-    Resend= 6,
+    Got= 6,
     Hello = 7,
 }
 
@@ -28,7 +28,7 @@ impl SwapCmd {
             3 => SwapCmd::Open,
             4 => SwapCmd::ServerErr,
             5 => SwapCmd::P2P,
-            6 => SwapCmd::Resend,
+            6 => SwapCmd::Got,
             7 => SwapCmd::Hello,
             _ => SwapCmd::None,
         }

@@ -1,13 +1,13 @@
 use crate::server::swap_cmd::SwapCmd;
 use std::mem::size_of;
 use super::conf::Conf;
+use rand::Rng;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Packet {
     pub cmd: u8,
-    // 0 is not over 1 is over
-    pub sess: u8,
-    pub over: u8,
+    pub sess: u32,
+    pub max: u32,
     pub order: u32,
     pub body: Vec<u8>,
 }
@@ -18,31 +18,44 @@ impl Packet {
         Packet {
             cmd: SwapCmd::None.enum2int(),
             sess: 0,
-            over: 1,
+            max: 0,
             order: 0,
             body: vec![],
         }
+    }
+    pub fn random_sess() -> u32 {
+        let mut rng = rand::thread_rng();
+        let n: u32 = rng.gen();
+        n
     }
     pub fn hello() -> Vec<u8> {
         let mut pac = Packet::empty();
         pac.cmd = SwapCmd::Hello.enum2int();
         pac.to_bytes()
     }
-    pub fn resend( sess: u8, order: u32) -> Vec<u8> {
+    pub fn got(p: &Packet) -> Vec<u8> {
         let mut pac = Packet::empty();
-        pac.cmd = SwapCmd::Resend.enum2int();
-        pac.sess = sess;
-        pac.order = order;
+        pac.cmd = SwapCmd::Got.enum2int();
+        pac.sess = p.sess;
+        pac.max = p.max;
+        pac.order = p.order;
         pac.to_bytes()
     }
+
     pub fn header_len() -> usize {
-        3 * size_of::<u8>() + size_of::<u32>()
+        1 * size_of::<u8>() + 3 * size_of::<u32>()
     }
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut v = vec![];
         v.push(self.cmd);
-        v.push(self.sess);
-        v.push(self.over);
+        let sess = self.sess.to_be_bytes();
+        for i in sess.iter() {
+            v.push(*i);
+        }
+        let max = self.max.to_be_bytes();
+        for i in max.iter() {
+            v.push(*i);
+        }
         let order = self.order.to_be_bytes();
         for i in order.iter() {
             v.push(*i);
@@ -52,35 +65,42 @@ impl Packet {
         }
         v
     }
-
-    pub fn new_pacs_from_send_bytes(body: &Vec<u8>, ses: u8) -> Vec<Packet> {
+    pub fn new_pacs_from_send_bytes(body: &Vec<u8>) -> (u32,Vec<Packet>) {
+        let ses=Packet::random_sess();
         let command = SwapCmd::P2P;
         let conf_size = Conf::get().size;
         let data = segment_bytes(body, conf_size, Packet::header_len());
         let mut res = vec![];
         let total = &data.len();
         for (i, v) in data.iter().enumerate() {
-            let ov = if i == total - 1 { 1 } else { 0 };
             let p = Packet {
                 cmd: command.enum2int(),
                 sess: ses,
-                over: ov,
+                max: *total as u32 - 1,
                 order: i as u32,
                 body: v.to_owned(),
             };
             res.push(p);
         }
-        res
+        (ses,res)
+    }
+    pub fn new_from_save_db( buf: &Vec<u8>) -> Self {
+        let total=buf.len();
+        Packet::new_from_rec_bytes(total,buf)
     }
     pub fn new_from_rec_bytes(total: usize, buf: &Vec<u8>) -> Self {
-        let ord_b: [u8; 4] = [buf[3], buf[4], buf[5], buf[6]];
+        let sess_b: [u8; 4] = [buf[1], buf[2], buf[3], buf[4]];
+        let sess_u = u32::from_be_bytes(sess_b);
+        let max_b: [u8; 4] = [buf[5], buf[6], buf[7], buf[8]];
+        let max_u = u32::from_be_bytes(max_b);
+        let ord_b: [u8; 4] = [buf[9], buf[10], buf[11], buf[12]];
         let ord_u = u32::from_be_bytes(ord_b);
         Packet {
             cmd: buf[0],
-            sess: buf[1],
-            over: buf[2],
+            sess: sess_u,
+            max: max_u,
             order: ord_u,
-            body: buf[7..total].to_vec(),
+            body: buf[13..total].to_vec(),
         }
     }
 }

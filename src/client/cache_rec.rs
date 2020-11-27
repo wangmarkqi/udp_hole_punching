@@ -1,63 +1,58 @@
 use std::net::SocketAddr;
+use super::conf::Conf;
+use crate::client::cache_key::Key;
 use super::packet::Packet;
 use super::packets::Packets;
-use super::conf::Conf;
-use crate::client::cache::Cache;
+use super::listen_utils::*;
+use super::sled_db::DB;
 use async_trait::async_trait;
-use std::collections::VecDeque;
-use std::sync::Mutex;
-use once_cell::sync::Lazy;
-use super::utils::*;
-pub static Msg: Lazy<Mutex<VecDeque<(SocketAddr, Vec<u8>)>>> = Lazy::new(|| {
-    let conf = Conf::get();
-    let m: VecDeque<(SocketAddr, Vec<u8>)> = VecDeque::with_capacity(conf.msg_queue_len);
-    Mutex::new(m)
-});
+use std::collections::HashMap;
 
-
-// ask resend ,clear cache by rec timeout and move to msg
-#[async_trait]
-pub trait RecCacheTask {
-    fn move_msg(&self);
-    async fn ask_resend(&self) -> anyhow::Result<()>;
+pub trait SingleSave {
+    fn single_save(&self, address: SocketAddr, pac: &Packet);
 }
 
-#[async_trait]
-impl RecCacheTask for Cache {
-    // 完整移交
-    fn move_msg(&self) {
-        let mut msg = Msg.lock().unwrap();
-        for k in self.keys().iter() {
-            if self.is_complete(k) {
-                let info = self.get(k);
-                let mut pacs = info.pacs;
-                let data = pacs.assembly();
-                msg.push_back((k.address, data));
-                self.clear(k);
-            }
-        }
-    }
-    async fn ask_resend(&self) -> anyhow::Result<()> {
-        let soc = SOC.get().unwrap();
-        let conf = Conf::get();
-        for k in self.keys().iter() {
-            let info = self.get(k);
-            let save_time = info.time;
-            let save_elapse = save_time.elapsed().as_micros() as i32;
-            if save_elapse < conf.ask_resend_elapse {
-                continue;
-            }
-
-            let mut pacs = info.pacs;
-            let lack_order = pacs.lacks();
-            if lack_order.len() == 0 {
-                continue;
-            }
-            for ord in lack_order.iter() {
-                let resend = Packet::resend(k.session, *ord);
-                soc.send_to(&resend, k.address).await?;
-            }
-        }
-        Ok(())
+impl SingleSave for DB {
+    fn single_save(&self, address: SocketAddr, pac: &Packet) {
+        let key = Key::new(pac, address);
+        self.insert(&key.enc(), &pac.to_bytes());
     }
 }
+
+// for rec
+pub trait RecMsg {
+    fn rec_one(&self, address: SocketAddr, sess: u32) -> Vec<u8>;
+    fn rec_many(&self) -> Vec<Vec<u8>>;
+    fn del_by_session_address(&self);
+}
+
+impl RecMsg for DB {
+    fn rec_one(&self, address: SocketAddr, sess: u32) -> Vec<u8> {
+        let dic = self.dic();
+        let mut m = Key::group_by_key(&dic);
+        for (key, mut pacs) in m.iter() {
+            if key.address == address && key.session == sess && pacs.is_complete() {
+                let res = pacs.assembly();
+
+
+                return res;
+            }
+        }
+        vec![]
+    }
+
+    fn rec_many(&self) -> Vec<Vec<u8>> {
+        let mut res = vec![];
+        let dic = self.dic();
+        let m = Key::group_by_key(&dic);
+        let complete = Key::get_complete_keys(&dic);
+        for k in complete.iter() {
+            let mut pacs = m[k];
+            let data = pacs.assembly();
+            res.push(data);
+            self.remove(&k.enc());
+        }
+        res
+    }
+}
+

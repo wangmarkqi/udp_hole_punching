@@ -5,20 +5,15 @@ use once_cell::sync::Lazy;
 pub struct Conf {
     pub id: String,
     pub size: usize,
-    pub msg_queue_len:usize,
-    pub ask_resend_more:usize,
+    pub retry_send_times:i32,
     // micro secs
     pub single_rec_timeout: i32,
-    pub ask_resend_elapse:i32,
-    pub ask_resend_interval:i32,
     pub swap_server: String,
     // 秒
     pub heart_beat_interval:i32,
-    pub send_cache_timeout: i32,
-    pub rec_cache_timeout:i32,
 }
 
-pub static CONF: Lazy<Mutex<Conf>> = Lazy::new(|| {
+static CONF: Lazy<Mutex<Conf>> = Lazy::new(|| {
     let mut m = Conf::default();
     Mutex::new(m)
 });
@@ -28,16 +23,11 @@ impl Conf {
         let _id = "test";
         let conf = Conf {
             id: _id.to_string(),
-            size: 1400,
-            ask_resend_more:10,
-            msg_queue_len:400,
-            single_rec_timeout: 100,
-            ask_resend_elapse:400,
-            ask_resend_interval:200,
+            size: 1420,
+            retry_send_times:3,
+            single_rec_timeout: 10,
             swap_server: String::from("127.0.0.1:4222"),
-            heart_beat_interval:40,
-            rec_cache_timeout:4,
-            send_cache_timeout: 4*2,
+            heart_beat_interval:14,
         };
         conf
     }

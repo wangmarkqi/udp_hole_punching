@@ -1,10 +1,11 @@
-use std::time:: Instant;
+use std::time::Instant;
 use super::conf::Conf;
-use async_trait::async_trait;
-use super::utils::*;
+use super::listen_utils::*;
 use crate::server::swap_cmd::SwapCmd;
-use super::cache_rec::RecCacheTask;
-use super::cache::Cache;
+use std::net::SocketAddr;
+use super::sled_db::DB;
+use async_trait::async_trait;
+
 
 pub struct Timer {
     time: Instant,
@@ -17,7 +18,6 @@ impl Timer {
         }
     }
 }
-
 #[async_trait]
 pub trait HeartBeat {
     async fn heart_beat(&mut self) -> anyhow::Result<()>;
@@ -27,39 +27,26 @@ pub trait HeartBeat {
 impl HeartBeat for Timer {
     async fn heart_beat(&mut self) -> anyhow::Result<()> {
         let conf = Conf::get();
-        let id=conf.id;
-        if id=="".to_string(){
+        let id = conf.id;
+        if id == "".to_string() {
+            dbg!("null id not send to save");
             return Ok(());
         }
 
-        let soc = SOC.get().unwrap();
         // let mut last_hb = Instant::now();
         // 定时发送hb
         let elapse = self.time.elapsed().as_secs() as i32;
-        if elapse > conf.heart_beat_interval {
-            dbg!("send hb");
-            let hb = SwapCmd::save(&id);
-            soc.send_to(&hb, &conf.swap_server).await?;
-            self.time = Instant::now();
+        if elapse < conf.heart_beat_interval {
+            return Ok(());
         }
+        self.time = Instant::now();
+
+        let hb = SwapCmd::save(&id);
+        let s = &conf.swap_server;
+        let address: SocketAddr = s.parse()?;
+        let soc = SOC.get().unwrap();
+        soc.send_to(&hb, address).await?;
         Ok(())
     }
 }
 
-#[async_trait]
-pub trait AskResend {
-    async fn ask_resend(&mut self) -> anyhow::Result<()>;
-}
-
-#[async_trait]
-impl AskResend for Timer {
-    async fn ask_resend(&mut self) -> anyhow::Result<()> {
-        let conf = Conf::get();
-        let elapse = self.time.elapsed().as_micros() as i32;
-        if elapse > conf.ask_resend_interval{
-            Cache::Rec.ask_resend().await?;
-            self.time = Instant::now();
-        }
-        Ok(())
-    }
-}

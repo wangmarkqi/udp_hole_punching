@@ -36,14 +36,12 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
         let cmd = SwapCmd::int2enum(swap.cmd);
 
 
-        let mut resp_me = vec![];
 
         match cmd {
             // callee sent to registry
             SwapCmd::Save => {
                 store.insert(id.clone(), swap.address);
-                dbg!("send  suuccess to saver");
-                resp_me = swap.pack("success".as_bytes());
+                dbg!("rec save and not send  to saver");
             }
             SwapCmd::Ask => {
                 if store.contains_key(&id) {
@@ -58,24 +56,17 @@ pub async fn make_match(host: &str) -> anyhow::Result<()> {
                     // 给peer，把自己的add发过去,换成open指令
                     dbg!("send address to asker");
                     let peer_address = peer.to_string();
-                    resp_me = swap.pack(&peer_address.as_bytes().to_vec());
+                    let resp_me = swap.pack(&peer_address.as_bytes().to_vec());
+                    socket.send_to(&resp_me, swap.address).await?;
 
                 } else {
                     dbg!("send err to reqer");
-                    resp_me = swap.pack("no registry".as_bytes());
+                    let resp_me = swap.pack("no registry".as_bytes());
+                    socket.send_to(&resp_me, swap.address).await?;
                 };
             }
             _ => {}
         }
-        socket.send_to(&resp_me, swap.address).await?;
     }
 }
 
-pub async fn test_swap_server() {
-    let host = "0.0.0.0:4222";
-    let res= make_match(host).await;
-    match res{
-        Ok(())=>dbg!("everything ok"),
-        Err(e)=>dbg!(&e.to_string()),
-    };
-}
