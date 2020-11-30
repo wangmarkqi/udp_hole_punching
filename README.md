@@ -74,14 +74,12 @@ pub fn test_callee_listen() -> anyhow::Result<()> {
     });
     loop {
         std::thread::sleep(Duration::from_secs(10));
-        let list = rec_many();
-        if list.len() > 0 {
+        let (addr, v) = rec_from();
+        if &v.len() > &0 {
             dbg!("callee rec res");
-            for (addr,v) in list.iter(){
-                write_file_as_u8("/home/b.exe", &v)?;
-                let back = "callee got you".as_bytes().to_vec();
-                send(&back, *addr);
-            }
+            write_file_as_u8("/home/b.exe", &v)?;
+            let back = "callee got you".as_bytes().to_vec();
+            send(&back, addr);
         }
     };
     Ok(())
@@ -108,7 +106,7 @@ pub fn test_caller_api() -> anyhow::Result<()> {
     let sess=send(&msg, addr);
 
     loop {
-        let (addr, v) = rec_one(addr,sess);
+        let  v = rec_one(addr,sess);
         if v.len() > 0 {
             let s = String::from_utf8_lossy(&v);
             dbg!("caller  rec res");
