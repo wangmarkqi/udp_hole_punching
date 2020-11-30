@@ -40,13 +40,11 @@ pub async fn process_from_server(n: usize, address: SocketAddr, buf: Vec<u8>) ->
     let swap = Swap::new(&buf, address, n);
     match cmd {
         SwapCmd::Open => {
-            dbg!("rec open and send hello to another peer");
             let hello = Packet::hello();
             let soc = SOC.get().unwrap();
             soc.send_to(&hello, &swap.id).await?;
         }
         SwapCmd::Ask => {
-            dbg!("rec ask and update peer address");
             let peer_address = swap.id;
             update_peer_address(peer_address);
         }

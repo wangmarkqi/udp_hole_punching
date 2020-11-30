@@ -21,7 +21,6 @@ pub fn ask_peer_address(peer_id: &str) -> anyhow::Result<()> {
 
 pub fn read_peer_address() -> anyhow::Result<SocketAddr> {
     let res = get_peer_address();
-    dbg!(&res);
     let addr: SocketAddr = res.parse()?;
     Ok(addr)
 }
@@ -30,10 +29,8 @@ pub fn send(msg: &Vec<u8>, address: SocketAddr) -> u32 {
     let conf = Conf::get();
     let (sess, pacs) = Packet::new_pacs_from_send_bytes(msg);
     let total = &pacs.len();
-    dbg!(total);
     let lower = conf.min_retry_len as usize;
     if total > &lower {
-        dbg!("save send cache");
         DB::Send.batch_save(address, &pacs.to_owned());
     }
     for pac in pacs.iter() {

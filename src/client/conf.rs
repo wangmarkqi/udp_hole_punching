@@ -26,9 +26,9 @@ impl Conf {
             id: "".to_string(),
             db_path: "./db".to_string(),
             size: 1420,
-            min_retry_len: 5,
-            retry_send_times: 3,
-            single_rec_timeout: 10,
+            min_retry_len: 10,
+            retry_send_times: 4,
+            single_rec_timeout: 50,
             swap_server: String::from("127.0.0.1:4222"),
             heart_beat_interval: 14,
         };

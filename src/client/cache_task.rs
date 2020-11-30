@@ -60,7 +60,6 @@ impl DoSend for DB {
         let (k, v) = self.pop();
         if k.len() > 0 && v.len() > 0 {
             let taskv = TaskV::dec(&v)?;
-            dbg!("task do send");
             let address = taskv.address;
             let data = taskv.data;
             let soc = SOC.get().unwrap();

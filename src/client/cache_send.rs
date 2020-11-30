@@ -91,6 +91,7 @@ impl Export2Task for DB {
         let dic = self.dic();
         if dic.len() == 0 { return; }
 
+        // clear whole db
         DB::Send.clear_tree();
 
         for (k, v) in dic.iter() {

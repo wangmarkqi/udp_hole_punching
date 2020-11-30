@@ -14,7 +14,6 @@ pub fn listen() {
 
 async fn _listen() -> anyhow::Result<()> {
     // 远程连接必须0.0.0.0:0
-    println!("udp begin to listen");
     let mut tim_hb = Timer::start();
     loop {
         // 定时发送hb
