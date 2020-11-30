@@ -1,4 +1,5 @@
 /target
 /pytest/*
 test.rs
-/data/*
+/data
+/.idea
