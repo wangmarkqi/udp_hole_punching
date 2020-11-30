@@ -1,3 +1,4 @@
 /target
 /pytest/*
 test.rs
+/data/*
