@@ -6,9 +6,9 @@ use crate::client::cache_send::Export2Task;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Eq)]
-pub struct TaskV {
-    pub address: SocketAddr,
-    pub data: Vec<u8>,
+struct TaskV {
+    address: SocketAddr,
+    data: Vec<u8>,
 }
 
 impl TaskV {
@@ -21,7 +21,7 @@ impl TaskV {
     fn enc(&self) -> Vec<u8> {
         bincode::serialize(self).unwrap()
     }
-    pub fn dec(v: &Vec<u8>) -> anyhow::Result<Self> {
+    fn dec(v: &Vec<u8>) -> anyhow::Result<Self> {
         let res = bincode::deserialize(v)?;
         Ok(res)
     }
@@ -65,7 +65,7 @@ impl DoSend for DB {
             let data = taskv.data;
             let soc = SOC.get().unwrap();
             soc.send_to(&data, &address).await?;
-        }else{
+        } else {
             DB::Send.export_task();
         }
 

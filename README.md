@@ -66,9 +66,7 @@ pub fn test_callee_listen() -> anyhow::Result<()> {
     conf.db_path="./data/callee".to_string();
     conf.set();
 
-    block_on(async {
-        init_udp().await.unwrap();
-    });
+    init_udp();
     std::thread::spawn(|| {
         listen();
     });
@@ -90,9 +88,7 @@ pub fn test_caller_api() -> anyhow::Result<()> {
     conf.swap_server = "x.x.x.x:xxxx".to_string();
     conf.db_path="./data/caller".to_string();
     conf.set();
-    block_on(async {
-        init_udp().await.unwrap();
-    });
+    init_udp();
     std::thread::spawn(|| {
         listen();
     });

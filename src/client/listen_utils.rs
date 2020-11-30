@@ -1,5 +1,4 @@
 use super::conf::Conf;
-
 use std::net::SocketAddr;
 use super::packet::Packet;
 use once_cell::sync::OnceCell;
@@ -11,15 +10,17 @@ use async_std::net::UdpSocket;
 use crate::client::cache_task::DoSend;
 use crate::client::cache_send::SendDelOne;
 use crate::client::cache_rec::SingleSave;
+use async_std::task::block_on;
 
 pub static SOC: OnceCell<UdpSocket> = OnceCell::new();
 
-pub async fn init_udp() -> anyhow::Result<()> {
-    DB::init();
-    DB::clear_db();
-    let soc = UdpSocket::bind("0.0.0.0:0").await?;
-    SOC.set(soc).unwrap();
-    Ok(())
+pub fn init_udp() {
+    block_on(async {
+        DB::init();
+        DB::clear_db();
+        let soc = UdpSocket::bind("0.0.0.0:0").await.expect("udp can not open");
+        SOC.set(soc).expect("udp can not set");
+    });
 }
 
 
@@ -74,12 +75,11 @@ pub async fn process_from_peer(n: usize, address: SocketAddr, buf: Vec<u8>) -> a
     Ok(())
 }
 
-pub async fn process_send_task()  {
-    match  DB::Task.do_send().await{
-        Ok(())=>{},
-        Err(e)=>{dbg!(e);}
+pub async fn process_send_task() {
+    match DB::Task.do_send().await {
+        Ok(()) => {}
+        Err(e) => { dbg!(e); }
     }
-
 }
 
 

@@ -5,7 +5,6 @@ extern crate anyhow;
 // use client::test::*;
 fn main() {
 
-    // test_db();
     // test_callee_listen();
     // test_caller_api();
     // test_swap_server();
