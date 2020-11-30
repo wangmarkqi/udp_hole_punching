@@ -32,7 +32,7 @@ This crate is aimed to be rust p2p communication framework.
   
 ```
     pub async fn test_swap_server() {
-        let host = "0.0.0.0:xxxx";
+        let host = "x.x.x.x:xxxx";
         let res= make_match(host).await;
         match res{
             Ok(())=>dbg!("everything ok"),
