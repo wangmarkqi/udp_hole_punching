@@ -42,10 +42,10 @@ pub fn send(msg: &Vec<u8>, address: SocketAddr) -> u32 {
     sess
 }
 
-pub fn rec_one(address: SocketAddr, sess: u32) -> (SocketAddr, Vec<u8>) {
+pub fn rec_one(address: SocketAddr, sess: u32) ->  Vec<u8> {
     DB::Rec.rec_one(address, sess)
 }
 
-pub fn rec_many() -> Vec<(SocketAddr, Vec<u8>)> {
-    DB::Rec.rec_many()
+pub fn rec_from() -> (SocketAddr, Vec<u8>) {
+    DB::Rec.rec_from()
 }

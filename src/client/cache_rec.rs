@@ -79,18 +79,18 @@ impl SingleSave for DB {
 
 // for rec
 pub trait RecMsg {
-    fn rec_one(&self, address: SocketAddr, sess: u32) -> (SocketAddr,Vec<u8>);
-    fn rec_many(&self) -> Vec<(SocketAddr,Vec<u8>)>;
+    fn rec_one(&self, address: SocketAddr, sess: u32) -> Vec<u8>;
+    fn rec_from(&self) -> (SocketAddr,Vec<u8>);
     fn del_by_session_address(&self, dic: &HashMap<Vec<u8>, Vec<u8>>, sese: u32, addr: SocketAddr);
 }
 
 impl RecMsg for DB {
-    fn rec_one(&self, address: SocketAddr, sess: u32) -> (SocketAddr,Vec<u8>) {
+    fn rec_one(&self, address: SocketAddr, sess: u32) -> Vec<u8> {
         if self != &DB::Rec {
             panic!("wrong db");
         }
         let dic = self.dic();
-        if dic.len() == 0 { return (address,vec![]); }
+        if dic.len() == 0 { return vec![]; }
         let m = RecKey::group_by_key(&dic);
         for (key, pacs) in m.iter() {
             let is_complete = &pacs.is_complete();
@@ -98,33 +98,32 @@ impl RecMsg for DB {
                 let mut data = pacs.clone();
                 let res = data.assembly();
                 self.del_by_session_address(&dic, sess, address);
-                return (address,res);
+                return res;
             }
         }
-        (address,vec![])
+        vec![]
     }
 
-    fn rec_many(&self) -> Vec<(SocketAddr,Vec<u8>)> {
+    fn rec_from(&self) -> (SocketAddr,Vec<u8>) {
         if self != &DB::Rec {
             panic!("wrong db");
         }
-        let mut res = vec![];
         let dic = self.dic();
-        dbg!(&dic.len());
-        if dic.len() == 0 { return res; }
         let complete = RecKey::get_complete_keys(&dic);
-        dbg!(&complete.len());
-        if complete.len() == 0 { return res; }
+        let default: SocketAddr = "0.0.0.0:8888".parse().unwrap();
+        if complete.len() == 0 {
+            return (default,vec![]);
+        }
         let m = RecKey::group_by_key(&dic);
         for k in complete.iter() {
             let mut pacs = m[k].clone();
             let data = pacs.assembly();
-            res.push((k.0,data));
+            let addr=k.0;
+            let sess=k.1;
+            self.del_by_session_address(&dic, sess, addr);
+            return (addr,data);
         }
-        for (addr, sess) in complete.iter() {
-            self.del_by_session_address(&dic, *sess, *addr);
-        }
-        res
+        (default,vec![])
     }
     fn del_by_session_address(&self, dic: &HashMap<Vec<u8>, Vec<u8>>, sess: u32, addr: SocketAddr) {
         if self != &DB::Rec {
