@@ -1,4 +1,3 @@
-pub mod cache_key;
 pub mod cache_send;
 pub mod cache_rec;
 pub mod cache_task;
@@ -10,5 +9,5 @@ pub mod conf;
 pub mod listen;
 pub mod api;
 pub mod listen_utils;
-pub mod test;
 pub mod sled_db;
+pub mod test;

@@ -118,8 +118,6 @@ fn segment_bytes(body: &Vec<u8>, conf_size: usize, header_len: usize) -> Vec<Vec
     let real_capacity_len = conf_size - header_len;
     let remainder = task_total_len % real_capacity_len;
     let times = task_total_len / real_capacity_len;
-    // 改max属性,max从0开始
-    let max = if remainder != 0 { times } else { times - 1 };
 
     let mut queue = vec![];
     let mut task_done_len = 0;

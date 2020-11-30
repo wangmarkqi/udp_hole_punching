@@ -1,5 +1,4 @@
 use super::packet::Packet;
-use super::conf::Conf;
 
 pub trait Packets {
     fn is_complete(&self) -> bool;
@@ -12,8 +11,7 @@ impl Packets for Vec<Packet> {
         if self.len() == 0 {
             return false;
         }
-        let pac = self[0];
-        let max = pac.max;
+        let max = self[0].max;
         if self.len() != max as usize + 1 {
             return false;
         }
@@ -45,6 +43,14 @@ impl Packets for Vec<Packet> {
 
 #[test]
 fn test_new_send() {
-    let body = &"abcdefghij".as_bytes().to_vec();
-    let res = Packet::new_pacs_from_send_bytes(body, 12);
+    let mut v=vec![];
+    for i in 0..2000{
+        v.push(97);
+    }
+    let (u,mut pacs) = Packet::new_pacs_from_send_bytes(&v);
+    dbg!(&pacs[0].body.len());
+    let pac=pacs[0].clone();
+    let s1=Packet::new_from_save_db(&pac.to_bytes());
+    dbg!(s1.body.len());
+
 }

@@ -1,12 +1,67 @@
 use std::net::SocketAddr;
-use super::conf::Conf;
-use crate::client::cache_key::Key;
 use super::packet::Packet;
 use super::packets::Packets;
-use super::listen_utils::*;
 use super::sled_db::DB;
-use async_trait::async_trait;
 use std::collections::HashMap;
+use serde::{Serialize,Deserialize};
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Eq)]
+struct RecKey {
+    pub address: SocketAddr,
+    pub session: u32,
+    pub max: u32,
+    pub order: u32,
+}
+
+impl RecKey {
+    fn new(pac: &Packet, addr: SocketAddr) -> Self {
+        Self {
+            address: addr,
+            session: pac.sess,
+            max: pac.max,
+            order: pac.order,
+        }
+    }
+    fn enc(&self) -> Vec<u8> {
+        bincode::serialize(self).unwrap()
+    }
+    fn dec(v: &Vec<u8>) -> anyhow::Result<Self> {
+        let res = bincode::deserialize(v)?;
+        Ok(res)
+    }
+    fn group_by_key(dic: &HashMap<Vec<u8>, Vec<u8>>) -> HashMap<(SocketAddr, u32), Vec<Packet>> {
+        let mut m: HashMap<(SocketAddr, u32), Vec<Packet>> = HashMap::new();
+        for (k, v) in dic.iter() {
+            let key = RecKey::dec(k);
+            if let Err(_) = key {
+                continue;
+            }
+            let key = key.unwrap();
+            let mk = (key.address, key.session);
+            let pac = Packet::new_from_save_db(v);
+            if m.contains_key(&mk) {
+                let mut old = m[&mk].clone();
+                old.push(pac);
+                m.insert(mk, old);
+            } else {
+                let mut l = vec![];
+                l.push(pac);
+                m.insert(mk, l);
+            }
+        }
+        m
+    }
+    fn get_complete_keys(dic: &HashMap<Vec<u8>, Vec<u8>>) -> Vec<(SocketAddr, u32)> {
+        let m = RecKey::group_by_key(dic);
+        let mut l = vec![];
+        for (k, v) in m.iter() {
+            if v.is_complete() {
+                l.push(k.to_owned());
+            }
+        }
+        l
+    }
+}
 
 pub trait SingleSave {
     fn single_save(&self, address: SocketAddr, pac: &Packet);
@@ -14,45 +69,81 @@ pub trait SingleSave {
 
 impl SingleSave for DB {
     fn single_save(&self, address: SocketAddr, pac: &Packet) {
-        let key = Key::new(pac, address);
+        if self != &DB::Rec {
+            panic!("wrong db");
+        }
+        let key = RecKey::new(pac, address);
         self.insert(&key.enc(), &pac.to_bytes());
     }
 }
 
 // for rec
 pub trait RecMsg {
-    fn rec_one(&self, address: SocketAddr, sess: u32) -> Vec<u8>;
-    fn rec_many(&self) -> Vec<Vec<u8>>;
-    fn del_by_session_address(&self);
+    fn rec_one(&self, address: SocketAddr, sess: u32) -> (SocketAddr,Vec<u8>);
+    fn rec_many(&self) -> Vec<(SocketAddr,Vec<u8>)>;
+    fn del_by_session_address(&self, dic: &HashMap<Vec<u8>, Vec<u8>>, sese: u32, addr: SocketAddr);
 }
 
 impl RecMsg for DB {
-    fn rec_one(&self, address: SocketAddr, sess: u32) -> Vec<u8> {
+    fn rec_one(&self, address: SocketAddr, sess: u32) -> (SocketAddr,Vec<u8>) {
+        if self != &DB::Rec {
+            panic!("wrong db");
+        }
         let dic = self.dic();
-        let mut m = Key::group_by_key(&dic);
-        for (key, mut pacs) in m.iter() {
-            if key.address == address && key.session == sess && pacs.is_complete() {
-                let res = pacs.assembly();
-
-
-                return res;
+        if dic.len() == 0 { return (address,vec![]); }
+        let m = RecKey::group_by_key(&dic);
+        for (key, pacs) in m.iter() {
+            let is_complete = &pacs.is_complete();
+            if key.0 == address && key.1 == sess && *is_complete {
+                let mut data = pacs.clone();
+                let res = data.assembly();
+                self.del_by_session_address(&dic, sess, address);
+                return (address,res);
             }
         }
-        vec![]
+        (address,vec![])
     }
 
-    fn rec_many(&self) -> Vec<Vec<u8>> {
+    fn rec_many(&self) -> Vec<(SocketAddr,Vec<u8>)> {
+        if self != &DB::Rec {
+            panic!("wrong db");
+        }
         let mut res = vec![];
         let dic = self.dic();
-        let m = Key::group_by_key(&dic);
-        let complete = Key::get_complete_keys(&dic);
+        dbg!(&dic.len());
+        if dic.len() == 0 { return res; }
+        let complete = RecKey::get_complete_keys(&dic);
+        dbg!(&complete.len());
+        if complete.len() == 0 { return res; }
+        let m = RecKey::group_by_key(&dic);
         for k in complete.iter() {
-            let mut pacs = m[k];
+            let mut pacs = m[k].clone();
             let data = pacs.assembly();
-            res.push(data);
-            self.remove(&k.enc());
+            res.push((k.0,data));
+        }
+        for (addr, sess) in complete.iter() {
+            self.del_by_session_address(&dic, *sess, *addr);
         }
         res
+    }
+    fn del_by_session_address(&self, dic: &HashMap<Vec<u8>, Vec<u8>>, sess: u32, addr: SocketAddr) {
+        if self != &DB::Rec {
+            panic!("wrong db");
+        }
+        for (k, _) in dic.iter() {
+            let key = RecKey::dec(k);
+            match key {
+                Err(e) => {
+                    dbg!(e);
+                    self.remove(&k);
+                }
+                Ok(key) => {
+                    if key.address == addr && key.session == sess {
+                        self.remove(&k);
+                    }
+                }
+            }
+        }
     }
 }
 

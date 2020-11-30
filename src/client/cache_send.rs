@@ -1,11 +1,39 @@
 use std::net::SocketAddr;
 use super::conf::Conf;
-use crate::client::cache_key::Key;
 use super::packet::Packet;
-use super::packets::Packets;
-use super::listen_utils::*;
 use super::sled_db::DB;
-use async_trait::async_trait;
+use crate::client::cache_task::TaskSave;
+use serde::{Serialize, Deserialize};
+
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Eq)]
+struct SendKey {
+    pub address: SocketAddr,
+    pub session: u32,
+    pub retry: i32,
+    pub max: u32,
+    pub order: u32,
+}
+
+impl SendKey {
+    fn new(pac: &Packet, addr: SocketAddr) -> Self {
+        Self {
+            address: addr,
+            session: pac.sess,
+            retry: 0,
+            max: pac.max,
+            order: pac.order,
+        }
+    }
+    fn enc(&self) -> Vec<u8> {
+        bincode::serialize(self).unwrap()
+    }
+    fn dec(v: &Vec<u8>) -> anyhow::Result<Self> {
+        let res = bincode::deserialize(v)?;
+        Ok(res)
+    }
+}
+
 
 // for send
 pub trait BatchSave {
@@ -14,11 +42,14 @@ pub trait BatchSave {
 
 impl BatchSave for DB {
     fn batch_save(&self, address: SocketAddr, pacs: &Vec<Packet>) {
+        if self != &DB::Send {
+            panic!("wrong db");
+        }
         if pacs.len() == 0 {
             return;
         }
         for pac in pacs.iter() {
-            let k = Key::new(pac, address);
+            let k = SendKey::new(pac, address);
             self.insert(&k.enc(), &pac.to_bytes());
         }
     }
@@ -26,43 +57,58 @@ impl BatchSave for DB {
 
 // for send
 pub trait SendDelOne {
-    fn send_del_one(&self, address: SocketAddr, pacs: &Packet);
+    fn send_del_one(&self, address: SocketAddr, pac: &Packet);
 }
 
 impl SendDelOne for DB {
     fn send_del_one(&self, address: SocketAddr, pac: &Packet) {
-        let k = Key::new(pac, address);
-        self.remove(&k.enc());
+        if self != &DB::Send {
+            panic!("wrong db");
+        }
+        let conf = Conf::get();
+        let max = conf.retry_send_times;
+        let lower = conf.min_retry_len ;
+        let mut k = SendKey::new(pac, address);
+        for i in 0..max + 1 {
+            k.retry = i;
+            self.remove(&k.enc());
+        }
     }
 }
 
 
 // for send
-#[async_trait]
-pub trait DoSend {
-    async fn do_send(&self) -> anyhow::Result<()>;
+pub trait Export2Task {
+    fn export_task(&self);
 }
 
-#[async_trait]
-impl DoSend for DB {
-    async fn do_send(&self) -> anyhow::Result<()> {
-        let (k, v) = self.next();
-        self.remove(&k);
+impl Export2Task for DB {
+    fn export_task(&self) {
+        if self != &DB::Send {
+            panic!("wrong db");
+        }
+        let conf = Conf::get();
+        let dic = self.dic();
+        if dic.len() == 0 { return; }
 
-        if let Ok(key) = Key::dec(&k) {
-            let conf = Conf::get();
+        DB::Send.clear_tree();
+
+        for (k, v) in dic.iter() {
+            let key = SendKey::dec(&k);
+            if let Err(_) = key {
+                continue;
+            }
+            let key = key.unwrap();
+
             let retry = key.retry;
-            if retry < conf.retry_send_times as usize {
+            let limit = &conf.retry_send_times;
+            if retry < *limit {
+                let address = key.address;
+                DB::Task.task_save(address, &v);
                 let mut newk = key.clone();
                 newk.retry = key.retry + 1;
                 self.insert(&newk.enc(), &v);
             }
-
-
-            let address = key.address;
-            let soc = SOC.get().unwrap();
-            soc.send_to(&v, &address).await?;
         }
-        Ok(())
     }
 }

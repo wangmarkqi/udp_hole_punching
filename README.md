@@ -40,79 +40,86 @@ This crate is aimed to be rust p2p communication framework.
         };
 }
 ```
-  - test_callee_listen
+  - test_callee/caller_listen
   
  
 ```
- use async_std::task::{spawn,block_on};
-use std::time::Duration;
-use udp_hole_punching as hole;
+ 
+fn read_file_as_u8(inputfile: &str) -> anyhow::Result<Vec<u8>> {
+    let mut _inputfile = File::open(inputfile)?;
+    let mut v: Vec<u8> = Vec::new();
+    _inputfile.read_to_end(&mut v)?;
+    Ok(v)
+}
 
-pub async fn test_callee_listen() -> anyhow::Result<()> {
-    let mut conf = hole::Conf::default();
-    conf.swap_server = "39.96.40.177:4222".to_string();
-    conf.id = "wq".to_string();
+fn write_file_as_u8(path_str: &str, binary: &Vec<u8>) -> anyhow::Result<String> {
+    let p = std::path::Path::new(path_str);
+    std::fs::write(p, binary)?;
+    Ok(format!("保存成功,地址：{}", path_str))
+}
+
+
+pub fn test_callee_listen() -> anyhow::Result<()> {
+    let mut conf = Conf::default();
+    conf.swap_server = "x.x.x.x:xxxx".to_string();
+    conf.id = "xx".to_string();
+    conf.db_path="./data/callee".to_string();
     conf.set();
-    hole::init_udp().await?;
-    spawn( async{
-        hole::listen().await;
-    });
 
+    block_on(async {
+        init_udp().await.unwrap();
+    });
+    std::thread::spawn(|| {
+        listen();
+    });
     loop {
-        let (addr, v) = hole::rec_from();
-        if v.len() > 0 {
-            let s = String::from_utf8_lossy(&v);
+        std::thread::sleep(Duration::from_secs(10));
+        let list = rec_many();
+        if list.len() > 0 {
             dbg!("callee rec res");
-            dbg!(s.len());
-            let back = "callee got you".as_bytes().to_vec();
-            hole::send(&back, addr).await?;
+            for (addr,v) in list.iter(){
+                write_file_as_u8("/home/b.exe", &v)?;
+                let back = "callee got you".as_bytes().to_vec();
+                send(&back, *addr);
+            }
         }
     };
     Ok(())
 }
 
-
-```
-
-  - test_caller_api 
-  
-  ```
-   pub async fn test_caller_api() -> anyhow::Result<()> {
-    let mut conf = hole::Conf::default();
-    conf.swap_server = "39.96.40.177:4222".to_string();
+pub fn test_caller_api() -> anyhow::Result<()> {
+    let mut conf = Conf::default();
+    conf.swap_server = "x.x.x.x:xxxx".to_string();
+    conf.db_path="./data/caller".to_string();
     conf.set();
-    hole::init_udp().await?;
-    spawn( async{
-        hole::listen().await;
+    block_on(async {
+        init_udp().await.unwrap();
     });
-    hole::ask_peer_address("wq").await?;
-// must waite long enough for address to be writeen into cache
-    async_std::task::sleep(Duration::from_secs(9)).await;
-    let res = hole::read_peer_address();
-    dbg!(&res);
-// if no address, res==""
-    let addr: SocketAddr = res.parse()?;
+    std::thread::spawn(|| {
+        listen();
+    });
+    ask_peer_address("xx");
+    std::thread::sleep(Duration::from_secs(9));
+    let addr = read_peer_address()?;
+    dbg!(&addr);
     dbg!("begin");
 
-    let msg = {
-        let mut v = vec![];
-        for i in 0..1024 * 10 {
-            v.push(8 as u8);
-        }
-        v
-    };
+    let msg = read_file_as_u8("D://a.exe")?;
+    let sess=send(&msg, addr);
 
     loop {
-        hole::send(&msg, addr).await?;
-        let (addr, v) = hole::rec_from();
+        let (addr, v) = rec_one(addr,sess);
         if v.len() > 0 {
             let s = String::from_utf8_lossy(&v);
             dbg!("caller  rec res");
         }
+        std::thread::sleep(Duration::from_secs(4));
     }
     Ok(())
 }
 
-  ```
+
+```
+
 ## Who use this crate ? 
 -  remote_shell: https://github.com/wangmarkqi/remote_shell

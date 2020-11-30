@@ -1,18 +1,15 @@
 use super::conf::Conf;
 
 use std::net::SocketAddr;
-use std::sync::Mutex;
 use super::packet::Packet;
-use super::packets::Packets;
 use once_cell::sync::OnceCell;
 use super::sled_db::DB;
 use crate::server::swap_cmd::SwapCmd;
 use crate::server::swap_protocal::Swap;
 use super::peer_address::update_peer_address;
-use crate::client::cache_send::{SendDelOne, DoSend};
-use crate::client::cache_key::Key;
 use async_std::net::UdpSocket;
-use crate::client::cache_task::DoTask;
+use crate::client::cache_task::DoSend;
+use crate::client::cache_send::SendDelOne;
 use crate::client::cache_rec::SingleSave;
 
 pub static SOC: OnceCell<UdpSocket> = OnceCell::new();
@@ -69,7 +66,6 @@ pub async fn process_from_peer(n: usize, address: SocketAddr, buf: Vec<u8>) -> a
         }
         // callee receive ask from caller,and answer over or lacks
         SwapCmd::Got => {
-            dbg!("rec got");
             DB::Send.send_del_one(address, &pac);
         }
 
@@ -79,14 +75,11 @@ pub async fn process_from_peer(n: usize, address: SocketAddr, buf: Vec<u8>) -> a
 }
 
 pub async fn process_send_task()  {
-    match  DB::Task.do_task().await{
+    match  DB::Task.do_send().await{
         Ok(())=>{},
         Err(e)=>{dbg!(e);}
     }
-    match  DB::Send.do_send().await{
-        Ok(())=>{},
-        Err(e)=>{dbg!(e);}
-    }
+
 }
 
 

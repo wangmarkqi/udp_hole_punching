@@ -1,8 +1,4 @@
-use once_cell::sync::OnceCell;
 use once_cell::sync::Lazy;
-use super::conf::Conf;
-use async_std::net::UdpSocket;
-use std::net::SocketAddr;
 use std::sync::Mutex;
 
 static PeerAddress: Lazy<Mutex<String>> = Lazy::new(|| {

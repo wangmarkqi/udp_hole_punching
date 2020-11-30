@@ -3,7 +3,6 @@ use super::conf::Conf;
 use super::listen_utils::*;
 use crate::server::swap_cmd::SwapCmd;
 use std::net::SocketAddr;
-use super::sled_db::DB;
 use async_trait::async_trait;
 
 
@@ -29,12 +28,8 @@ impl HeartBeat for Timer {
         let conf = Conf::get();
         let id = conf.id;
         if id == "".to_string() {
-            dbg!("null id not send to save");
             return Ok(());
         }
-
-        // let mut last_hb = Instant::now();
-        // 定时发送hb
         let elapse = self.time.elapsed().as_secs() as i32;
         if elapse < conf.heart_beat_interval {
             return Ok(());

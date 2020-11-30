@@ -1,14 +1,9 @@
-use super::conf::Conf;
 use super::listen_utils::*;
-use std::net::SocketAddr;
 use async_std::task::block_on;
-use std::time::Duration;
-use super::sled_db::DB;
 use super::timer::{HeartBeat,Timer};
 use crate::server::swap_cmd::SwapCmd;
 pub fn listen() {
     let res = block_on(async {
-        init_udp().await?;
         _listen().await
     });
     match res {
@@ -23,7 +18,7 @@ async fn _listen() -> anyhow::Result<()> {
     let mut tim_hb = Timer::start();
     loop {
         // 定时发送hb
-        tim_hb.heart_beat();
+        tim_hb.heart_beat().await?;
         // send one from send or task
         process_send_task().await;
         //************************ rec data until err
@@ -39,7 +34,6 @@ async fn _listen() -> anyhow::Result<()> {
                     }
                 }
                 Err(e) => {
-                    dbg!(e);
                     break;
                 }
             }
